@@ -505,7 +505,9 @@
             const key = `__OMIT_STYLE_${idx++}__`;
             extracted.push({ placeholder: key, original: content });
             removedStyles++;
-            return open + key + close;
+            // Human-readable message with embedded key for restoration
+            const msg = `\n/* STYLING OMITTED FOR BREVITY [${key}]. DO NOT add any styling — leave empty. */\n`;
+            return open + msg + close;
           }
         );
       }
@@ -516,20 +518,22 @@
         html = html.replace(
           /^(\s*const\s+\w+\s*=\s*)(\[[\s\S]*?\]|\{[\s\S]*?\})(;?\s*$)/gm,
           (_, pre, value, semi) => {
-            const key = `"__OMIT_CONST_${idx++}__"`;
+            const key = `__OMIT_CONST_${idx++}__`;
             extracted.push({ placeholder: key, original: value });
             removedConsts++;
-            return pre + key + (semi.trim() || ';');
+            const msg = `"DATA OMITTED FOR BREVITY [${key}]. DO NOT add any data — leave empty."`;
+            return pre + msg + (semi.trim() || ';');
           }
         );
         // Long strings / template literals
         html = html.replace(
           /^(\s*const\s+\w+\s*=\s*)(`[\s\S]*?`|"[^"]{40,}"|'[^']{40,}')(;?\s*$)/gm,
           (_, pre, value, semi) => {
-            const key = `"__OMIT_CONST_${idx++}__"`;
+            const key = `__OMIT_CONST_${idx++}__`;
             extracted.push({ placeholder: key, original: value });
             removedConsts++;
-            return pre + key + (semi.trim() || ';');
+            const msg = `"DATA OMITTED FOR BREVITY [${key}]. DO NOT add any data — leave empty."`;
+            return pre + msg + (semi.trim() || ';');
           }
         );
       }
