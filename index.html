@@ -3,215 +3,644 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🚫 HTML Style Omitter</title>
+  <title>HTML Style Omitter</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #131316;
+      --surface-2: #1a1a1f;
+      --border: #2a2a32;
+      --border-hover: #3d3d4a;
+      --accent: #e8ff47;
+      --accent-dim: rgba(232, 255, 71, 0.12);
+      --text: #e8e8f0;
+      --text-muted: #6b6b80;
+      --text-dim: #9494a8;
+      --red: #ff5f6d;
+      --green: #4fffb0;
+      --green-dim: rgba(79, 255, 176, 0.1);
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #121212;
-      color: #e0e0e0;
-      margin: 0;
-      padding: 20px;
-      line-height: 1.6;
+      font-family: var(--font-mono);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    
-    .container {
-      max-width: 1200px;
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 36px 24px 60px;
     }
-    
-    h1 {
-      color: #bb86fc;
-      text-align: center;
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-block { display: flex; flex-direction: column; gap: 4px; }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: clamp(22px, 3.5vw, 32px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .logo span { color: var(--accent); }
+
+    .tagline {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .badge-group { display: flex; gap: 8px; align-items: center; }
+
+    .badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--surface);
+    }
+    .badge.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    /* ── Controls bar ── */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
-    
-    .app-description {
-      text-align: center;
-      color: #b0b0b0;
-      margin-bottom: 30px;
+
+    .toggle-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
-    
-    .editor-container {
+
+    .toggle-group { display: flex; gap: 8px; }
+
+    .toggle-btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      letter-spacing: 0.04em;
+    }
+    .toggle-btn:hover { border-color: var(--border-hover); color: var(--text); }
+    .toggle-btn.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+    .sep { width: 1px; height: 20px; background: var(--border); }
+
+    .stats { margin-left: auto; font-size: 12px; color: var(--text-muted); letter-spacing: 0.04em; }
+    .stats b { color: var(--accent); font-weight: 500; }
+
+    /* ── Phase sections ── */
+    .phase {
+      margin-bottom: 32px;
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .phase-number {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 3px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .phase-1 .phase-number { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .phase-2 .phase-number { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+    .phase-title {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+    }
+
+    .phase-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: auto;
+      letter-spacing: 0.03em;
+    }
+
+    .phase-divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 8px 0 28px;
+      color: var(--text-muted);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .phase-divider::before, .phase-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Editor grid ── */
+    .editors {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 20px;
+      gap: 16px;
     }
-    
-    @media (max-width: 768px) {
-      .editor-container {
-        grid-template-columns: 1fr;
-      }
+
+    @media (max-width: 860px) {
+      .editors { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; gap: 16px; }
+      .phase-desc { display: none; }
     }
-    
-    .editor-box {
-      background-color: #1e1e1e;
-      border-radius: 8px;
-      border: 1px solid #333;
+
+    .editor-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      transition: border-color 0.2s;
     }
-    
-    .editor-header {
+    .editor-panel:focus-within { border-color: var(--border-hover); }
+
+    .phase-2 .editor-panel.output-panel { border-color: rgba(79, 255, 176, 0.2); }
+    .phase-2 .editor-panel.output-panel:focus-within { border-color: var(--green); }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      min-height: 48px;
+    }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .panel-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      margin-top: 1px;
+    }
+
+    .panel-title-group { display: flex; flex-direction: column; gap: 2px; }
+
+    .panel-actions { display: flex; gap: 8px; }
+
+    .action-btn {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      letter-spacing: 0.04em;
+    }
+    .action-btn:hover { border-color: var(--border-hover); color: var(--text); background: var(--surface-2); }
+    .action-btn.copy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .action-btn.copy-green:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .action-btn.clear-btn:hover { border-color: var(--red); color: var(--red); background: rgba(255,95,109,0.1); }
+
+    textarea {
+      width: 100%;
+      height: 380px;
+      padding: 16px;
+      background: transparent;
+      color: var(--text);
+      border: none;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+      flex-grow: 1;
+      outline: none;
+      caret-color: var(--accent);
+    }
+    textarea::placeholder { color: var(--text-muted); opacity: 0.45; }
+    textarea[readonly] { color: var(--text-dim); }
+
+    .restore-status {
+      padding: 8px 16px;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--surface-2);
+      min-height: 32px;
+    }
+    .restore-status.ok { color: var(--green); }
+    .restore-status.warn { color: #ffb347; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--accent);
+      color: #000;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.green { background: var(--green); }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 15px;
-      background-color: #252525;
-      border-bottom: 1px solid #333;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
     }
-    
-    .editor-title {
-      font-weight: 600;
-      color: #bb86fc;
-    }
-    
-    .editor-controls {
-      display: flex;
-      gap: 10px;
-    }
-    
-    .copy-btn {
-      background-color: #3700b3;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.2s;
-    }
-    
-    .copy-btn:hover {
-      background-color: #6200ee;
-    }
-    
-    textarea {
-      width: 100%;
-      height: 400px;
-      padding: 15px;
-      background-color: #1e1e1e;
-      color: #e0e0e0;
-      border: none;
-      resize: vertical;
-      font-family: 'Courier New', monospace;
-      font-size: 14px;
-      line-height: 1.5;
-      flex-grow: 1;
-    }
-    
-    textarea:focus {
-      outline: 1px solid #bb86fc;
-    }
-    
-    .notification {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #03dac6;
-      color: #000;
-      padding: 10px 20px;
-      border-radius: 4px;
-      font-weight: 500;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.3s, transform 0.3s;
-      z-index: 1000;
-    }
-    
-    .notification.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    
-    footer {
-      margin-top: 30px;
-      text-align: center;
-      color: #888;
-      font-size: 14px;
-    }
+
+    textarea::-webkit-scrollbar { width: 6px; }
+    textarea::-webkit-scrollbar-track { background: transparent; }
+    textarea::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    textarea::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>HTML Style Omitter</h1>
-    <p class="app-description">
-      Paste your HTML code (including HTML, CSS, and JS) in the left editor.<br>
-      The right editor will automatically show the same code with styles removed.
-    </p>
-    
-    <div class="editor-container">
-      <div class="editor-box">
-        <div class="editor-header">
-          <div class="editor-title">Input HTML</div>
-          <div class="editor-controls">
-            <button class="copy-btn" onclick="clearInput()">Clear</button>
-          </div>
-        </div>
-        <textarea id="input-editor" placeholder="Paste your HTML code here..."></textarea>
+  <div class="wrapper">
+    <header>
+      <div class="logo-block">
+        <div class="logo">HTML<span>.</span>Omitter</div>
+        <div class="tagline">Strip &amp; restore styles/data for LLM round-trips</div>
       </div>
-      
-      <div class="editor-box">
-        <div class="editor-header">
-          <div class="editor-title">Output HTML</div>
-          <div class="editor-controls">
-            <button class="copy-btn" onclick="copyOutput()">Copy</button>
+      <div class="badge-group">
+        <div class="badge active" id="badge-styles">CSS ✓</div>
+        <div class="badge" id="badge-consts">JS consts</div>
+      </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="controls-bar">
+      <span class="toggle-label">Omit</span>
+      <div class="toggle-group">
+        <button class="toggle-btn on" id="toggle-styles" onclick="toggleOption('styles')">&lt;style&gt; blocks</button>
+        <button class="toggle-btn" id="toggle-consts" onclick="toggleOption('consts')">const data</button>
+      </div>
+      <div class="sep"></div>
+      <div class="stats" id="stats">—</div>
+    </div>
+
+    <!-- Phase 1: Strip -->
+    <div class="phase phase-1">
+      <div class="phase-header">
+        <div class="phase-number">Phase 1</div>
+        <div class="phase-title">Strip for sharing</div>
+        <div class="phase-desc">Paste original → copy stripped output → share with LLM</div>
+      </div>
+      <div class="editors">
+        <div class="editor-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-title">Original code</div>
+              <div class="panel-subtitle">Your full app source</div>
+            </div>
+            <div class="panel-actions">
+              <button class="action-btn clear-btn" onclick="clearAll()">Clear all</button>
+            </div>
           </div>
+          <textarea id="input-editor" placeholder="Paste your full HTML/CSS/JS here…" spellcheck="false"></textarea>
         </div>
-        <textarea id="output-editor" placeholder="Output will appear here..." readonly></textarea>
+
+        <div class="editor-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-title">Stripped output</div>
+              <div class="panel-subtitle">Share this with the LLM</div>
+            </div>
+            <div class="panel-actions">
+              <button class="action-btn copy-btn" onclick="copyPanel('stripped-editor', false)">Copy</button>
+            </div>
+          </div>
+          <textarea id="stripped-editor" placeholder="Stripped code will appear here…" readonly spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-divider">↓ LLM makes changes to the stripped code ↓</div>
+
+    <!-- Phase 2: Restore -->
+    <div class="phase phase-2">
+      <div class="phase-header">
+        <div class="phase-number">Phase 2</div>
+        <div class="phase-title">Restore omitted content</div>
+        <div class="phase-desc">Paste LLM's updated code → get fully restored version</div>
+      </div>
+      <div class="editors">
+        <div class="editor-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-title">Updated code</div>
+              <div class="panel-subtitle">LLM output (still stripped)</div>
+            </div>
+            <div class="panel-actions">
+              <button class="action-btn clear-btn" onclick="clearUpdated()">Clear</button>
+            </div>
+          </div>
+          <textarea id="updated-editor" placeholder="Paste the LLM's updated code here…" spellcheck="false"></textarea>
+        </div>
+
+        <div class="editor-panel output-panel">
+          <div class="panel-header">
+            <div class="panel-title-group">
+              <div class="panel-title">Restored code</div>
+              <div class="panel-subtitle">Styles &amp; data re-injected</div>
+            </div>
+            <div class="panel-actions">
+              <button class="action-btn copy-green" onclick="copyPanel('restored-editor', true)">Copy</button>
+            </div>
+          </div>
+          <textarea id="restored-editor" placeholder="Fully restored code will appear here…" readonly spellcheck="false"></textarea>
+          <div class="restore-status" id="restore-status">Waiting for updated code…</div>
+        </div>
       </div>
     </div>
   </div>
-  
-  <div class="notification" id="notification">Copied to clipboard!</div>
-  
+
+  <div class="toast" id="toast">✓ Copied to clipboard</div>
+
   <footer>
-    Made by Kay 🧡
+    <span>Made by Kay 🧡</span>
+    <span id="char-count">—</span>
   </footer>
 
   <script>
-    const inputEditor = document.getElementById('input-editor');
-    const outputEditor = document.getElementById('output-editor');
-    const notification = document.getElementById('notification');
-    
-    // Process input HTML whenever it changes
+    const inputEditor   = document.getElementById('input-editor');
+    const strippedEditor = document.getElementById('stripped-editor');
+    const updatedEditor = document.getElementById('updated-editor');
+    const restoredEditor = document.getElementById('restored-editor');
+    const toast         = document.getElementById('toast');
+    const statsEl       = document.getElementById('stats');
+    const charCountEl   = document.getElementById('char-count');
+    const restoreStatus = document.getElementById('restore-status');
+
+    const options = { styles: true, consts: false };
+
+    // Stores extracted segments: array of { placeholder, original }
+    // Placeholders are embedded in the stripped output and matched on restore.
+    let extracted = [];
+
+    // ── Toggle options ──────────────────────────────────────────────
+    function toggleOption(key) {
+      options[key] = !options[key];
+      document.getElementById('toggle-' + key).classList.toggle('on', options[key]);
+      const badge = document.getElementById('badge-' + key);
+      if (badge) badge.classList.toggle('active', options[key]);
+      processHtml();
+    }
+
+    // ── Phase 1: Strip ──────────────────────────────────────────────
     inputEditor.addEventListener('input', processHtml);
-    
+
     function processHtml() {
-      const inputHtml = inputEditor.value;
-      
-      if (!inputHtml) {
-        outputEditor.value = '';
+      const raw = inputEditor.value;
+
+      if (!raw.trim()) {
+        strippedEditor.value = '';
+        extracted = [];
+        statsEl.textContent = '—';
+        charCountEl.textContent = '—';
+        tryRestore();
         return;
       }
-      
-      // Replace style tags content with the placeholder
-      const processedHtml = inputHtml.replace(
-        /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, 
-        '$1(styling omitted for brevity. Do not write any styling)$3'
-      );
-      
-      outputEditor.value = processedHtml;
+
+      extracted = [];
+      let idx = 0;
+      let html = raw;
+      let removedStyles = 0;
+      let removedConsts = 0;
+
+      // Strip <style> block contents
+      if (options.styles) {
+        html = html.replace(
+          /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
+          (_, open, content, close) => {
+            const key = `__OMIT_STYLE_${idx++}__`;
+            extracted.push({ placeholder: key, original: content });
+            removedStyles++;
+            return open + key + close;
+          }
+        );
+      }
+
+      // Strip const declarations with array/object values (multi-line aware)
+      if (options.consts) {
+        // Objects and arrays
+        html = html.replace(
+          /^(\s*const\s+\w+\s*=\s*)(\[[\s\S]*?\]|\{[\s\S]*?\})(;?\s*$)/gm,
+          (_, pre, value, semi) => {
+            const key = `"__OMIT_CONST_${idx++}__"`;
+            extracted.push({ placeholder: key, original: value });
+            removedConsts++;
+            return pre + key + (semi.trim() || ';');
+          }
+        );
+        // Long strings / template literals
+        html = html.replace(
+          /^(\s*const\s+\w+\s*=\s*)(`[\s\S]*?`|"[^"]{40,}"|'[^']{40,}')(;?\s*$)/gm,
+          (_, pre, value, semi) => {
+            const key = `"__OMIT_CONST_${idx++}__"`;
+            extracted.push({ placeholder: key, original: value });
+            removedConsts++;
+            return pre + key + (semi.trim() || ';');
+          }
+        );
+      }
+
+      strippedEditor.value = html;
+
+      // Stats
+      const inLen = raw.length;
+      const outLen = html.length;
+      const pct = inLen > 0 ? Math.round(((inLen - outLen) / inLen) * 100) : 0;
+      const parts = [];
+      if (removedStyles) parts.push(`${removedStyles} style block${removedStyles > 1 ? 's' : ''}`);
+      if (removedConsts)  parts.push(`${removedConsts} const${removedConsts > 1 ? 's' : ''}`);
+      statsEl.innerHTML = parts.length
+        ? `Removed <b>${parts.join(', ')}</b> — saved <b>${pct}%</b>`
+        : `No removals matched`;
+      charCountEl.textContent = `${outLen.toLocaleString()} chars stripped`;
+
+      tryRestore();
     }
-    
-    function copyOutput() {
-      if (!outputEditor.value) return;
-      
-      outputEditor.select();
-      document.execCommand('copy');
-      
-      // Show notification
-      notification.classList.add('show');
-      setTimeout(() => {
-        notification.classList.remove('show');
-      }, 2000);
+
+    // ── Phase 2: Restore ────────────────────────────────────────────
+    updatedEditor.addEventListener('input', tryRestore);
+
+    function tryRestore() {
+      const updated = updatedEditor.value.trim();
+
+      if (!updated) {
+        restoredEditor.value = '';
+        restoreStatus.textContent = 'Waiting for updated code…';
+        restoreStatus.className = 'restore-status';
+        return;
+      }
+
+      if (extracted.length === 0) {
+        // Nothing was stripped — just pass through
+        restoredEditor.value = updated;
+        restoreStatus.textContent = 'Nothing was stripped — output is identical to input.';
+        restoreStatus.className = 'restore-status warn';
+        return;
+      }
+
+      let restored = updated;
+      let matchCount = 0;
+      let missingKeys = [];
+
+      for (const { placeholder, original } of extracted) {
+        // Match the key even if it appears inside quotes (for const values)
+        // The placeholder may appear bare (style) or wrapped in quotes (consts)
+        const bare = placeholder.replace(/^"|"$/g, ''); // strip surrounding quotes if any
+        // Try to match with or without surrounding quotes
+        const patterns = [
+          placeholder,          // exact as stored (e.g. "__OMIT_STYLE_0__" or "__OMIT_CONST_1__" wrapped in quotes)
+          bare,                 // bare key
+          `"${bare}"`,          // double-quoted
+          `'${bare}'`,          // single-quoted
+          `\`${bare}\``,        // backtick
+        ];
+
+        let found = false;
+        for (const p of patterns) {
+          if (restored.includes(p)) {
+            restored = restored.split(p).join(original);
+            matchCount++;
+            found = true;
+            break;
+          }
+        }
+        if (!found) missingKeys.push(bare);
+      }
+
+      restoredEditor.value = restored;
+
+      if (missingKeys.length === 0) {
+        restoreStatus.textContent = `✓ All ${matchCount} segment${matchCount !== 1 ? 's' : ''} restored successfully.`;
+        restoreStatus.className = 'restore-status ok';
+      } else {
+        restoreStatus.textContent = `⚠ Restored ${matchCount}/${extracted.length}. Missing: ${missingKeys.join(', ')}`;
+        restoreStatus.className = 'restore-status warn';
+      }
     }
-    
-    function clearInput() {
+
+    // ── Utilities ───────────────────────────────────────────────────
+    function copyPanel(id, isGreen) {
+      const val = document.getElementById(id).value;
+      if (!val) return;
+      navigator.clipboard.writeText(val).catch(() => {
+        document.getElementById(id).select();
+        document.execCommand('copy');
+      });
+      toast.className = 'toast' + (isGreen ? ' green' : '') + ' show';
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function clearAll() {
       inputEditor.value = '';
-      outputEditor.value = '';
+      strippedEditor.value = '';
+      updatedEditor.value = '';
+      restoredEditor.value = '';
+      extracted = [];
+      statsEl.textContent = '—';
+      charCountEl.textContent = '—';
+      restoreStatus.textContent = 'Waiting for updated code…';
+      restoreStatus.className = 'restore-status';
+    }
+
+    function clearUpdated() {
+      updatedEditor.value = '';
+      restoredEditor.value = '';
+      restoreStatus.textContent = 'Waiting for updated code…';
+      restoreStatus.className = 'restore-status';
     }
   </script>
 </body>
