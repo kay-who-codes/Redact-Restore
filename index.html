@@ -490,7 +490,7 @@
 </head>
 <body>
 <div class="wrap">
-
+ 
   <header>
     <div class="brand">
       <div class="stamp">CLASSIFIED</div>
@@ -501,18 +501,26 @@
     </div>
     <div class="session-note" id="session-note">No saved session yet</div>
   </header>
-
+ 
   <div class="controls">
     <span class="controls-label">Redact</span>
     <div class="chip-row">
       <button class="chip on" id="chip-styles" onclick="toggleOption('styles')"><span class="dot"></span>&lt;style&gt; contents</button>
       <button class="chip" id="chip-consts" onclick="toggleOption('consts')"><span class="dot"></span>const/let/var data</button>
       <button class="chip on" id="chip-assets" onclick="toggleOption('assets')"><span class="dot"></span>base64 assets</button>
+      <button class="chip" id="chip-comments" onclick="toggleOption('comments')"><span class="dot"></span>comments</button>
+      <button class="chip" id="chip-svg" onclick="toggleOption('svg')"><span class="dot"></span>inline SVG icons</button>
+      <button class="chip" id="chip-repeats" onclick="toggleOption('repeats')"><span class="dot"></span>repeated blocks</button>
+    </div>
+    <div class="v-sep"></div>
+    <span class="controls-label">Compress</span>
+    <div class="chip-row">
+      <button class="chip" id="chip-minify" onclick="toggleOption('minify')"><span class="dot"></span>minify shell</button>
     </div>
     <div class="v-sep"></div>
     <div class="stats-strip" id="stats-strip">Paste code below to begin</div>
   </div>
-
+ 
   <!-- Phase 1 -->
   <div class="phase phase-1">
     <div class="phase-head">
@@ -535,7 +543,7 @@
         </div>
         <textarea id="input-editor" placeholder="Paste your full HTML/CSS/JS here, or drop a file…" spellcheck="false"></textarea>
       </div>
-
+ 
       <div class="panel" id="stripped-panel">
         <div class="panel-head">
           <div class="panel-title-group">
@@ -562,13 +570,13 @@
       </div>
     </div>
   </div>
-
+ 
   <div class="runoff">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v15m0 0l-5-5m5 5l5-5"/></svg>
     LLM edits the redacted code
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v15m0 0l-5-5m5 5l5-5"/></svg>
   </div>
-
+ 
   <!-- Phase 2 -->
   <div class="phase phase-2">
     <div class="phase-head">
@@ -589,7 +597,7 @@
         </div>
         <textarea id="updated-editor" placeholder="Paste the LLM's edited code here…" spellcheck="false"></textarea>
       </div>
-
+ 
       <div class="panel" id="restored-panel">
         <div class="panel-head">
           <div class="panel-title-group">
@@ -606,16 +614,16 @@
       </div>
     </div>
   </div>
-
+ 
 </div>
-
+ 
 <div class="toast" id="toast"></div>
-
+ 
 <footer>
   <span>Made by Kay 🧡 — nothing you paste here leaves your browser</span>
   <span><kbd>⌘/Ctrl</kbd>+<kbd>S</kbd> downloads restored · <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> clears all</span>
 </footer>
-
+ 
 <script>
   const inputEditor    = document.getElementById('input-editor');
   const strippedEditor = document.getElementById('stripped-editor');
@@ -633,12 +641,12 @@
   const manifestToggle  = document.getElementById('manifest-toggle');
   const manifestList    = document.getElementById('manifest-list');
   const manifestSummary = document.getElementById('manifest-summary');
-
-  const options = { styles: true, consts: false, assets: true };
+ 
+  const options = { styles: true, consts: false, assets: true, comments: false, svg: false, repeats: false, minify: false };
   let extracted = [];
   let strippedView = 'raw';
   let saveTimer = null;
-
+ 
   /* ───────────────────────── option toggles ───────────────────────── */
   function toggleOption(key){
     options[key] = !options[key];
@@ -646,7 +654,7 @@
     processHtml();
     queueSave();
   }
-
+ 
   /* ───────────────────────── bracket-aware value scanner ───────────────────────── */
   function findMatchingBracket(str, startIndex){
     const open = str[startIndex];
@@ -675,7 +683,7 @@
     }
     return -1;
   }
-
+ 
   function extractDeclarations(html, startIdx){
     const results = [];
     const re = /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*/g;
@@ -696,7 +704,7 @@
         if (j - declEnd >= 40) valueEnd = j;
       }
       if (valueEnd === -1 || valueEnd >= html.length) continue;
-
+ 
       const value = html.slice(declEnd, valueEnd + 1);
       output += html.slice(lastIndex, declEnd);
       const key = `__OMIT_CONST_${idx++}__`;
@@ -708,7 +716,7 @@
     output += html.slice(lastIndex);
     return { output, results, nextIdx: idx };
   }
-
+ 
   function extractBase64(html, startIdx){
     const re = /data:(?:image|font|application|audio|video)\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]{80,}/g;
     const results = [];
@@ -720,14 +728,93 @@
     });
     return { output, results, nextIdx: idx };
   }
-
+ 
+  function extractComments(html, startIdx){
+    const results = [];
+    let idx = startIdx;
+ 
+    // HTML comments <!-- -->
+    html = html.replace(/<!--([\s\S]*?)-->/g, (m, content) => {
+      if (/OMITTED FOR BREVITY|DATA OMITTED/.test(content)) return m;
+      const key = `__OMIT_COMMENT_${idx++}__`;
+      results.push({ placeholder: key, original: content, kind: 'HTML comment', size: content.length });
+      return `<!--${key}-->`;
+    });
+ 
+    // CSS / JS block comments /* */
+    html = html.replace(/\/\*([\s\S]*?)\*\//g, (m, content) => {
+      if (/OMITTED FOR BREVITY|DATA OMITTED/.test(content)) return m;
+      const key = `__OMIT_COMMENT_${idx++}__`;
+      results.push({ placeholder: key, original: content, kind: 'block comment', size: content.length });
+      return `/*${key}*/`;
+    });
+ 
+    // JS line comments — only ones that own their whole line, to avoid eating "//" inside URLs/strings
+    html = html.replace(/^([ \t]*)\/\/(.*)$/gm, (m, indent, content) => {
+      const key = `__OMIT_COMMENT_${idx++}__`;
+      results.push({ placeholder: key, original: content, kind: 'line comment', size: content.length });
+      return `${indent}//${key}`;
+    });
+ 
+    return { output: html, results, nextIdx: idx };
+  }
+ 
+  function extractSvgIcons(html, startIdx){
+    const results = [];
+    let idx = startIdx;
+    const output = html.replace(/(<svg[^>]*>)([\s\S]*?)(<\/svg>)/gi, (m, open, inner, close) => {
+      if (inner.trim().length < 20) return m; // not worth redacting trivial shapes
+      const key = `__OMIT_SVG_${idx++}__`;
+      results.push({ placeholder: key, original: inner, kind: 'svg icon', size: inner.length });
+      return `${open}<!--${key}-->${close}`;
+    });
+    return { output, results, nextIdx: idx };
+  }
+ 
+  function extractRepeats(html, startIdx){
+    const results = [];
+    let idx = startIdx;
+    const seen = new Set();
+    const lines = html.split('\n').map(line => {
+      const trimmed = line.trim();
+      if (trimmed.length < 50 || !trimmed.startsWith('<')) return line;
+      if (!seen.has(trimmed)){ seen.add(trimmed); return line; }
+      const key = `__OMIT_REPEAT_${idx++}__`;
+      results.push({ placeholder: key, original: line, kind: 'repeated block', size: line.length });
+      const indent = line.match(/^\s*/)[0];
+      return `${indent}<!--${key}: identical to an earlier occurrence-->`;
+    });
+    return { output: lines.join('\n'), results, nextIdx: idx };
+  }
+ 
+  function minifyShell(html){
+    return html
+      .split('\n')
+      .map(l => l.replace(/^[ \t]+/, '').replace(/[ \t]{2,}/g, ' '))
+      .join('\n')
+      .replace(/\n{2,}/g, '\n');
+  }
+ 
   /* ───────────────────────── Phase 1: strip ───────────────────────── */
   inputEditor.addEventListener('input', () => { processHtml(); queueSave(); });
-
+ 
+  function buildExplainerBlock(results){
+    if (!results.length) return '';
+    const kinds = [...new Set(results.map(r => r.kind))];
+    const totalChars = results.reduce((s, r) => s + r.size, 0);
+    const lines = [
+      'NOTICE FOR THE MODEL READING THIS FILE:',
+      `This file has been redacted before being sent to you. ${results.length} segment(s) — ${kinds.join(', ')} — totalling ~${totalChars.toLocaleString()} characters were removed and replaced with short markers like __OMIT_TYPE_N__.`,
+      'This is done purely to save context/tokens on content that has no bearing on the task (styling, binary-looking data, decorative markup, comments, duplicate blocks) — none of it was deleted, it lives outside this conversation and will be mechanically reinserted afterward by matching each marker back to its original content.',
+      'Do not attempt to reconstruct, guess, or fill in what a marker stood for. Leave every marker exactly as written, in its original position, character-for-character — including its surrounding quotes/brackets/comment syntax if any — even if it looks incomplete or like a broken reference. If you need to move, duplicate, or delete the code around a marker, keep the marker attached to it verbatim; if a marker must be deleted outright, that omitted content is deleted too.'
+    ];
+    return `<!--\n${lines.join('\n\n')}\n-->\n\n`;
+  }
+ 
   function processHtml(){
     const raw = inputEditor.value;
     inputCount.textContent = raw ? `${raw.length.toLocaleString()} chars · ~${Math.round(raw.length/4).toLocaleString()} tokens` : '—';
-
+ 
     if (!raw.trim()){
       strippedEditor.value = '';
       extracted = [];
@@ -738,12 +825,12 @@
       tryRestore();
       return;
     }
-
+ 
     extracted = [];
     let idx = 0;
     let html = raw;
     let removedStyles = 0;
-
+ 
     if (options.styles){
       html = html.replace(
         /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
@@ -755,39 +842,70 @@
         }
       );
     }
-
+ 
     let removedAssets = 0;
     if (options.assets){
       const res = extractBase64(html, idx);
       html = res.output; idx = res.nextIdx; removedAssets = res.results.length;
       extracted.push(...res.results);
     }
-
+ 
     let removedConsts = 0;
     if (options.consts){
       const res = extractDeclarations(html, idx);
       html = res.output; idx = res.nextIdx; removedConsts = res.results.length;
       extracted.push(...res.results);
     }
-
+ 
+    let removedComments = 0;
+    if (options.comments){
+      const res = extractComments(html, idx);
+      html = res.output; idx = res.nextIdx; removedComments = res.results.length;
+      extracted.push(...res.results);
+    }
+ 
+    let removedSvg = 0;
+    if (options.svg){
+      const res = extractSvgIcons(html, idx);
+      html = res.output; idx = res.nextIdx; removedSvg = res.results.length;
+      extracted.push(...res.results);
+    }
+ 
+    let removedRepeats = 0;
+    if (options.repeats){
+      const res = extractRepeats(html, idx);
+      html = res.output; idx = res.nextIdx; removedRepeats = res.results.length;
+      extracted.push(...res.results);
+    }
+ 
+    if (options.minify) html = minifyShell(html);
+ 
+    const inLen = raw.length, redactedLen = html.length;
+    const pct = inLen > 0 ? Math.round(((inLen - redactedLen) / inLen) * 100) : 0;
+ 
+    if (extracted.length) html = buildExplainerBlock(extracted) + html;
+ 
     strippedEditor.value = html;
-
-    const inLen = raw.length, outLen = html.length;
-    const pct = inLen > 0 ? Math.round(((inLen - outLen) / inLen) * 100) : 0;
+ 
+    const outLen = html.length;
     const parts = [];
     if (removedStyles) parts.push(`${removedStyles} style block${removedStyles > 1 ? 's' : ''}`);
     if (removedAssets) parts.push(`${removedAssets} asset${removedAssets > 1 ? 's' : ''}`);
     if (removedConsts) parts.push(`${removedConsts} declaration${removedConsts > 1 ? 's' : ''}`);
+    if (removedComments) parts.push(`${removedComments} comment${removedComments > 1 ? 's' : ''}`);
+    if (removedSvg) parts.push(`${removedSvg} svg icon${removedSvg > 1 ? 's' : ''}`);
+    if (removedRepeats) parts.push(`${removedRepeats} repeated block${removedRepeats > 1 ? 's' : ''}`);
+    if (options.minify) parts.push('minified');
     statsStrip.innerHTML = parts.length
       ? `Redacted <b>${parts.join(', ')}</b> — <b>${pct}%</b> smaller`
       : `Nothing matched the active filters`;
     strippedCount.textContent = `${outLen.toLocaleString()} chars · ~${Math.round(outLen/4).toLocaleString()} tokens`;
-
+ 
     renderManifest();
     renderPreview();
     tryRestore();
   }
-
+ 
   function renderManifest(){
     if (!extracted.length){ manifestWrap.style.display = 'none'; manifestList.innerHTML=''; return; }
     manifestWrap.style.display = 'block';
@@ -797,16 +915,16 @@
       `<div class="manifest-item"><span class="tag">${escapeHtml(e.kind)}</span><span class="fname">${escapeHtml(e.placeholder)}</span><span class="fsize">${e.size.toLocaleString()} ch</span></div>`
     ).join('');
   }
-
+ 
   function toggleManifest(){
     manifestToggle.classList.toggle('open');
     manifestList.classList.toggle('open');
   }
-
+ 
   function escapeHtml(s){
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
-
+ 
   function renderPreview(){
     const text = strippedEditor.value;
     if (!text){ strippedPreview.innerHTML = ''; return; }
@@ -817,7 +935,7 @@
     }
     strippedPreview.innerHTML = escaped;
   }
-
+ 
   function setStrippedView(mode){
     strippedView = mode;
     document.getElementById('view-raw-btn').classList.toggle('active', mode === 'raw');
@@ -826,14 +944,14 @@
     strippedPreview.classList.toggle('active', mode === 'preview');
     if (mode === 'preview') renderPreview();
   }
-
+ 
   /* ───────────────────────── Phase 2: restore ───────────────────────── */
   updatedEditor.addEventListener('input', () => { tryRestore(); queueSave(); });
-
+ 
   function tryRestore(){
     const updated = updatedEditor.value.trim();
     document.getElementById('restored-panel').classList.remove('output-good');
-
+ 
     if (!updated){
       restoredEditor.value = '';
       restoredCount.textContent = '—';
@@ -841,7 +959,7 @@
       restoreStatus.className = 'status-line';
       return;
     }
-
+ 
     if (extracted.length === 0){
       restoredEditor.value = updated;
       restoredCount.textContent = `${updated.length.toLocaleString()} chars`;
@@ -849,11 +967,11 @@
       restoreStatus.className = 'status-line warn';
       return;
     }
-
+ 
     let restored = updated;
     let matchCount = 0;
     const missing = [];
-
+ 
     for (const { placeholder, original } of extracted){
       const bare = placeholder.replace(/^"|"$/g, '');
       const patterns = [placeholder, bare, `"${bare}"`, `'${bare}'`, `\`${bare}\``];
@@ -866,10 +984,10 @@
       }
       if (!found) missing.push(bare);
     }
-
+ 
     restoredEditor.value = restored;
     restoredCount.textContent = `${restored.length.toLocaleString()} chars · ~${Math.round(restored.length/4).toLocaleString()} tokens`;
-
+ 
     if (missing.length === 0){
       restoreStatus.innerHTML = `<span class="status-stamp">DECLASSIFIED</span> All ${matchCount} segment${matchCount!==1?'s':''} restored.`;
       restoreStatus.className = 'status-line ok';
@@ -879,7 +997,7 @@
       restoreStatus.className = 'status-line warn';
     }
   }
-
+ 
   /* ───────────────────────── file upload / drag-drop ───────────────────────── */
   document.getElementById('file-input').addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -887,7 +1005,7 @@
     readFileIntoInput(file);
     e.target.value = '';
   });
-
+ 
   function readFileIntoInput(file){
     const reader = new FileReader();
     reader.onload = () => {
@@ -898,7 +1016,7 @@
     reader.onerror = () => showToast('Could not read that file', 'red');
     reader.readAsText(file);
   }
-
+ 
   const inputPanel = document.getElementById('input-panel');
   ['dragenter','dragover'].forEach(evt =>
     inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.add('drag-over'); })
@@ -910,7 +1028,7 @@
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
     if (file) readFileIntoInput(file);
   });
-
+ 
   /* ───────────────────────── utilities ───────────────────────── */
   function showToast(msg, color){
     toast.textContent = msg;
@@ -918,7 +1036,7 @@
     clearTimeout(showToast._t);
     showToast._t = setTimeout(() => toast.classList.remove('show'), 2000);
   }
-
+ 
   function copyPanel(id, isGood){
     const val = document.getElementById(id).value;
     if (!val){ showToast('Nothing to copy yet', 'red'); return; }
@@ -928,7 +1046,7 @@
     });
     showToast('Copied to clipboard', isGood ? 'green' : null);
   }
-
+ 
   function downloadText(text, filename){
     if (!text){ showToast('Nothing to download yet', 'red'); return; }
     const blob = new Blob([text], { type: 'text/plain' });
@@ -939,7 +1057,7 @@
     URL.revokeObjectURL(url);
     showToast(`Downloaded ${filename}`);
   }
-
+ 
   function clearAll(){
     inputEditor.value = ''; strippedEditor.value = '';
     updatedEditor.value = ''; restoredEditor.value = '';
@@ -952,7 +1070,7 @@
     renderManifest(); renderPreview();
     queueSave(true);
   }
-
+ 
   function clearUpdated(){
     updatedEditor.value = ''; restoredEditor.value = '';
     restoredCount.textContent = '—';
@@ -961,7 +1079,7 @@
     document.getElementById('restored-panel').classList.remove('output-good');
     queueSave();
   }
-
+ 
   document.addEventListener('keydown', (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === 's'){
@@ -973,7 +1091,7 @@
       clearAll();
     }
   });
-
+ 
   /* ───────────────────────── session autosave ───────────────────────── */
   function queueSave(immediate){
     clearTimeout(saveTimer);
@@ -993,7 +1111,7 @@
     };
     if (immediate) doSave(); else saveTimer = setTimeout(doSave, 600);
   }
-
+ 
   async function restoreSession(){
     try{
       const res = await window.storage.get('session', false);
@@ -1018,7 +1136,7 @@
       processHtml();
     }
   }
-
+ 
   restoreSession();
 </script>
 </body>
