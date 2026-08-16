@@ -1,651 +1,1025 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML Style Omitter</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>❌ REDACT/RESTORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 
-    :root {
-      --bg: #0d0d0f;
-      --surface: #131316;
-      --surface-2: #1a1a1f;
-      --border: #2a2a32;
-      --border-hover: #3d3d4a;
-      --accent: #e8ff47;
-      --accent-dim: rgba(232, 255, 71, 0.12);
-      --text: #e8e8f0;
-      --text-muted: #6b6b80;
-      --text-dim: #9494a8;
-      --red: #ff5f6d;
-      --green: #4fffb0;
-      --green-dim: rgba(79, 255, 176, 0.1);
-      --font-display: 'Syne', sans-serif;
-      --font-mono: 'DM Mono', monospace;
-    }
+  :root{
+    --paper:       #000000;
+    --paper-2:     #2527424b;
+    --paper-3:     #291919;
+    --ink:         #e9e0c9;
+    --ink-soft:    #a89d80;
+    --ink-faint:   #6e6553;
+    --line:        #3a3325;
+    --line-soft:   #2a251c;
+    --red:         #c94c43;
+    --red-dim:     rgba(217,99,90,0.1);
+    --red-dim-2:   rgba(217,99,90,0.2);
+    --green:       #43e023;
+    --green-dim:   rgba(89, 183, 105, 0.1);
+    --green-dim-2: rgba(92, 183, 89, 0.2);
+    --bar:         #f4ecd6;
+    --bar-text:    #14120d;
+    --font-stamp:  'Special Elite', 'Courier New', monospace;
+    --font-mono:   'JetBrains Mono', 'Courier New', monospace;
+  }
 
-    body {
-      font-family: var(--font-mono);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
 
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
+  html{ scroll-behavior:smooth; }
 
-    .wrapper {
-      position: relative;
-      z-index: 1;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 36px 24px 60px;
-    }
+  body{
+    font-family:var(--font-mono);
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    background-image:
+      radial-gradient(ellipse at 20% -10%, rgba(255,255,255,0.04), transparent 55%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+  }
 
-    /* ── Header ── */
-    header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 36px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-    }
+  ::selection{ background:var(--red); color:var(--paper); }
 
-    .logo-block { display: flex; flex-direction: column; gap: 4px; }
+  :focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
 
-    .logo {
-      font-family: var(--font-display);
-      font-size: clamp(22px, 3.5vw, 32px);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--text);
-      line-height: 1;
-    }
-    .logo span { color: var(--accent); }
+  .wrap{
+    max-width:1360px;
+    margin:0 auto;
+    padding:34px 22px 56px;
+  }
 
-    .tagline {
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+  /* ── Header ─────────────────────────────────────────────── */
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    padding-bottom:22px;
+    margin-bottom:26px;
+    border-bottom:2px solid var(--ink);
+    position:relative;
+  }
 
-    .badge-group { display: flex; gap: 8px; align-items: center; }
+  .brand{ display:flex; align-items:center; gap:18px; }
 
-    .badge {
-      font-size: 11px;
-      font-family: var(--font-mono);
-      letter-spacing: 0.05em;
-      padding: 4px 10px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      background: var(--surface);
-    }
-    .badge.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-dim);
-    }
+  .stamp{
+    font-family:var(--font-stamp);
+    font-size:11px;
+    letter-spacing:0.14em;
+    color:var(--red);
+    border:2px solid var(--red);
+    padding:5px 10px 4px;
+    border-radius:3px;
+    transform:rotate(-7deg);
+    background:var(--red-dim);
+    white-space:nowrap;
+    user-select:none;
+  }
 
-    /* ── Controls bar ── */
-    .controls-bar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
+  .title-block{ display:flex; flex-direction:column; gap:5px; }
 
-    .toggle-label {
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
+  h1{
+    font-family:var(--font-stamp);
+    font-size:clamp(22px,3vw,30px);
+    letter-spacing:0.01em;
+    color:var(--ink);
+    line-height:1;
+  }
+  h1 .slash{ color:var(--red); }
 
-    .toggle-group { display: flex; gap: 8px; }
+  .tagline{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
 
-    .toggle-btn {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      letter-spacing: 0.04em;
-    }
-    .toggle-btn:hover { border-color: var(--border-hover); color: var(--text); }
-    .toggle-btn.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .session-note{
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:0.03em;
+    text-align:right;
+    max-width:220px;
+  }
+  .session-note.show{ color:var(--green); }
 
-    .sep { width: 1px; height: 20px; background: var(--border); }
+  /* ── Controls bar ──────────────────────────────────────── */
+  .controls{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    padding:12px 16px;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:6px;
+    margin-bottom:30px;
+  }
 
-    .stats { margin-left: auto; font-size: 12px; color: var(--text-muted); letter-spacing: 0.04em; }
-    .stats b { color: var(--accent); font-weight: 500; }
+  .controls-label{
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
 
-    /* ── Phase sections ── */
-    .phase {
-      margin-bottom: 32px;
-    }
+  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
 
-    .phase-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
+  .chip{
+    font-family:var(--font-mono);
+    font-size:12px;
+    font-weight:500;
+    padding:6px 12px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:background 0.15s, border-color 0.15s, color 0.15s;
+    letter-spacing:0.02em;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .chip:hover{ border-color:var(--ink-faint); color:var(--ink); }
+  .chip.on{ background:var(--red); border-color:var(--red); color:var(--paper); }
+  .chip .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.55; }
+  .chip.on .dot{ opacity:1; }
 
-    .phase-number {
-      font-family: var(--font-display);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 3px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-    }
+  .v-sep{ width:1px; height:22px; background:var(--line); }
 
-    .phase-1 .phase-number { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-    .phase-2 .phase-number { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+  .stats-strip{
+    margin-left:auto;
+    font-size:12px;
+    color:var(--ink-soft);
+    letter-spacing:0.02em;
+    text-align:right;
+  }
+  .stats-strip b{ color:var(--red); font-weight:700; }
 
-    .phase-title {
-      font-family: var(--font-display);
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-dim);
-      letter-spacing: 0.02em;
-    }
+  /* ── Phase sections ────────────────────────────────────── */
+  .phase{ margin-bottom:20px; }
 
-    .phase-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-left: auto;
-      letter-spacing: 0.03em;
-    }
+  .phase-head{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
 
-    .phase-divider {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin: 8px 0 28px;
-      color: var(--text-muted);
-      font-size: 12px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .phase-divider::before, .phase-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+  .phase-tag{
+    font-family:var(--font-stamp);
+    font-size:11px;
+    letter-spacing:0.1em;
+    padding:4px 10px;
+    border:1.5px solid var(--ink);
+    border-radius:3px;
+    color:var(--ink);
+    background:var(--paper);
+  }
+  .phase-2 .phase-tag{ border-color:var(--green); color:var(--green); background:var(--green-dim); }
 
-    /* ── Editor grid ── */
-    .editors {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
+  .phase-name{
+    font-family:var(--font-stamp);
+    font-size:15px;
+    color:var(--ink);
+    letter-spacing:0.01em;
+  }
 
-    @media (max-width: 860px) {
-      .editors { grid-template-columns: 1fr; }
-      header { flex-direction: column; align-items: flex-start; gap: 16px; }
-      .phase-desc { display: none; }
-    }
+  .phase-sub{
+    font-size:11.5px;
+    color:var(--ink-faint);
+    margin-left:auto;
+    letter-spacing:0.02em;
+  }
 
-    .editor-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: border-color 0.2s;
-    }
-    .editor-panel:focus-within { border-color: var(--border-hover); }
+  .runoff{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin:6px 0 26px;
+    color:var(--ink-faint);
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+  }
+  .runoff::before,.runoff::after{
+    content:'';
+    flex:1;
+    max-width:320px;
+    height:0;
+    border-top:1px dashed var(--line);
+  }
+  .runoff svg{ width:14px; height:14px; flex-shrink:0; }
 
-    .phase-2 .editor-panel.output-panel { border-color: rgba(79, 255, 176, 0.2); }
-    .phase-2 .editor-panel.output-panel:focus-within { border-color: var(--green); }
+  /* ── Editors ───────────────────────────────────────────── */
+  .editors{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    align-items:stretch;
+  }
 
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: var(--surface-2);
-      border-bottom: 1px solid var(--border);
-      min-height: 48px;
-    }
+  @media (max-width:900px){
+    .editors{ grid-template-columns:1fr; }
+    header{ flex-direction:column; align-items:flex-start; gap:14px; }
+    .session-note{ text-align:left; }
+    .phase-sub{ display:none; }
+    .stats-strip{ margin-left:0; text-align:left; width:100%; }
+  }
 
-    .panel-title {
-      font-family: var(--font-display);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
+  .panel{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:7px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    position:relative;
+  }
+  .panel.drag-over{ border-color:var(--red); background:var(--red-dim); }
+  .panel.output-good{ border-color:var(--green); }
 
-    .panel-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-      margin-top: 1px;
-    }
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 14px;
+    background:var(--paper-2);
+    border-bottom:1px solid var(--line);
+    min-height:44px;
+    flex-wrap:wrap;
+  }
 
-    .panel-title-group { display: flex; flex-direction: column; gap: 2px; }
+  .panel-title-group{ display:flex; flex-direction:column; gap:1px; }
+  .panel-title{
+    font-family:var(--font-stamp);
+    font-size:12.5px;
+    letter-spacing:0.03em;
+    color:var(--ink);
+  }
+  .panel-sub{ font-size:10.5px; color:var(--ink-faint); letter-spacing:0.02em; }
 
-    .panel-actions { display: flex; gap: 8px; }
+  .panel-actions{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
 
-    .action-btn {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      padding: 5px 12px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      letter-spacing: 0.04em;
-    }
-    .action-btn:hover { border-color: var(--border-hover); color: var(--text); background: var(--surface-2); }
-    .action-btn.copy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-    .action-btn.copy-green:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
-    .action-btn.clear-btn:hover { border-color: var(--red); color: var(--red); background: rgba(255,95,109,0.1); }
+  .btn{
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    font-weight:500;
+    padding:5px 10px;
+    border-radius:4px;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all 0.15s;
+    letter-spacing:0.02em;
+    white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--ink); color:var(--ink); background:var(--paper-3); }
+  .btn.primary:hover{ border-color:var(--red); color:var(--red); background:var(--red-dim); }
+  .btn.primary-green:hover{ border-color:var(--green); color:var(--green); background:var(--green-dim); }
+  .btn.danger:hover{ border-color:var(--red); color:var(--red); background:var(--red-dim); }
 
-    textarea {
-      width: 100%;
-      height: 380px;
-      padding: 16px;
-      background: transparent;
-      color: var(--text);
-      border: none;
-      resize: vertical;
-      font-family: var(--font-mono);
-      font-size: 13px;
-      line-height: 1.65;
-      flex-grow: 1;
-      outline: none;
-      caret-color: var(--accent);
-    }
-    textarea::placeholder { color: var(--text-muted); opacity: 0.45; }
-    textarea[readonly] { color: var(--text-dim); }
+  .view-toggle{ display:flex; border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+  .view-toggle button{
+    font-family:var(--font-mono);
+    font-size:11px;
+    padding:5px 9px;
+    border:none;
+    background:transparent;
+    color:var(--ink-faint);
+    cursor:pointer;
+  }
+  .view-toggle button.active{ background:var(--ink); color:var(--paper); }
 
-    .restore-status {
-      padding: 8px 16px;
-      font-size: 11px;
-      letter-spacing: 0.04em;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
-      background: var(--surface-2);
-      min-height: 32px;
-    }
-    .restore-status.ok { color: var(--green); }
-    .restore-status.warn { color: #ffb347; }
+  textarea{
+    width:100%;
+    height:340px;
+    padding:14px;
+    background:transparent;
+    color:var(--ink);
+    border:none;
+    resize:vertical;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    line-height:1.6;
+    flex-grow:1;
+    outline:none;
+    caret-color:var(--red);
+  }
+  textarea::placeholder{ color:var(--ink-faint); opacity:0.7; }
+  textarea[readonly]{ color:var(--ink-soft); }
 
-    /* ── Toast ── */
-    .toast {
-      position: fixed;
-      bottom: 28px;
-      right: 28px;
-      background: var(--accent);
-      color: #000;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      z-index: 1000;
-      pointer-events: none;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .toast.green { background: var(--green); }
+  .preview{
+    width:100%;
+    height:340px;
+    padding:14px;
+    overflow:auto;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    line-height:1.6;
+    white-space:pre-wrap;
+    word-break:break-word;
+    color:var(--ink);
+    display:none;
+  }
+  .preview.active{ display:block; }
+  textarea.hidden-by-preview{ display:none; }
 
-    /* ── Footer ── */
-    footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-    }
+  .redact-bar{
+    display:inline-block;
+    background:var(--bar);
+    color:var(--bar-text);
+    border-radius:2px;
+    padding:0 6px;
+    font-size:10.5px;
+    letter-spacing:0.06em;
+    font-family:var(--font-mono);
+    vertical-align:1px;
+    cursor:default;
+  }
 
-    textarea::-webkit-scrollbar { width: 6px; }
-    textarea::-webkit-scrollbar-track { background: transparent; }
-    textarea::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    textarea::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
-  </style>
+  .status-line{
+    padding:8px 14px;
+    font-size:11px;
+    letter-spacing:0.02em;
+    border-top:1px solid var(--line);
+    background:var(--paper-2);
+    color:var(--ink-faint);
+    min-height:34px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .status-line.ok{ color:var(--green); }
+  .status-line.warn{ color:var(--red); }
+
+  .status-stamp{
+    font-family:var(--font-stamp);
+    font-size:10px;
+    letter-spacing:0.08em;
+    padding:2px 8px;
+    border:1.5px solid var(--green);
+    border-radius:3px;
+    color:var(--green);
+    background:var(--green-dim);
+    transform:rotate(-4deg);
+    white-space:nowrap;
+  }
+
+  /* ── Manifest (extracted segments log) ────────────────── */
+  .manifest{
+    border-top:1px solid var(--line);
+    background:var(--paper-2);
+  }
+  .manifest-toggle{
+    width:100%;
+    text-align:left;
+    padding:8px 14px;
+    font-family:var(--font-mono);
+    font-size:11px;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .manifest-toggle:hover{ color:var(--ink); }
+  .manifest-toggle .chev{ transition:transform 0.15s; }
+  .manifest-toggle.open .chev{ transform:rotate(90deg); }
+  .manifest-list{
+    display:none;
+    max-height:140px;
+    overflow-y:auto;
+    padding:0 14px 10px;
+  }
+  .manifest-list.open{ display:block; }
+  .manifest-item{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    font-size:11px;
+    padding:4px 0;
+    border-bottom:1px dotted var(--line);
+    color:var(--ink-soft);
+  }
+  .manifest-item:last-child{ border-bottom:none; }
+  .manifest-item .tag{
+    font-size:9.5px;
+    letter-spacing:0.05em;
+    padding:1px 6px;
+    border-radius:3px;
+    background:var(--paper-3);
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    flex-shrink:0;
+  }
+  .manifest-item .fname{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .manifest-item .fsize{ color:var(--ink-faint); flex-shrink:0; }
+
+  /* ── Toast ─────────────────────────────────────────────── */
+  .toast{
+    position:fixed;
+    bottom:26px;
+    right:26px;
+    background:var(--ink);
+    color:var(--paper);
+    padding:10px 18px;
+    border-radius:5px;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    font-weight:500;
+    letter-spacing:0.03em;
+    opacity:0;
+    transform:translateY(10px);
+    transition:opacity 0.2s ease, transform 0.2s ease;
+    z-index:1000;
+    pointer-events:none;
+    border:1px solid var(--ink);
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.green{ background:var(--green); border-color:var(--green); }
+  .toast.red{ background:var(--red); border-color:var(--red); }
+
+  /* ── Footer ────────────────────────────────────────────── */
+  footer{
+    margin-top:34px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:11px;
+    color:var(--ink-faint);
+    letter-spacing:0.03em;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  footer kbd{
+    font-family:var(--font-mono);
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:1px 5px;
+    font-size:10px;
+    color:var(--ink-soft);
+  }
+
+  textarea::-webkit-scrollbar, .preview::-webkit-scrollbar, .manifest-list::-webkit-scrollbar{ width:7px; }
+  textarea::-webkit-scrollbar-track, .preview::-webkit-scrollbar-track{ background:transparent; }
+  textarea::-webkit-scrollbar-thumb, .preview::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
+  textarea::-webkit-scrollbar-thumb:hover, .preview::-webkit-scrollbar-thumb:hover{ background:var(--ink-faint); }
+</style>
 </head>
 <body>
-  <div class="wrapper">
-    <header>
-      <div class="logo-block">
-        <div class="logo">HTML<span>.</span>Omitter</div>
-        <div class="tagline">Strip &amp; restore styles/data for LLM round-trips</div>
-      </div>
-      <div class="badge-group">
-        <div class="badge active" id="badge-styles">CSS ✓</div>
-        <div class="badge" id="badge-consts">JS consts</div>
-      </div>
-    </header>
+<div class="wrap">
 
-    <!-- Controls -->
-    <div class="controls-bar">
-      <span class="toggle-label">Omit</span>
-      <div class="toggle-group">
-        <button class="toggle-btn on" id="toggle-styles" onclick="toggleOption('styles')">&lt;style&gt; blocks</button>
-        <button class="toggle-btn" id="toggle-consts" onclick="toggleOption('consts')">const data</button>
-      </div>
-      <div class="sep"></div>
-      <div class="stats" id="stats">—</div>
-    </div>
-
-    <!-- Phase 1: Strip -->
-    <div class="phase phase-1">
-      <div class="phase-header">
-        <div class="phase-number">Phase 1</div>
-        <div class="phase-title">Strip for sharing</div>
-        <div class="phase-desc">Paste original → copy stripped output → share with LLM</div>
-      </div>
-      <div class="editors">
-        <div class="editor-panel">
-          <div class="panel-header">
-            <div class="panel-title-group">
-              <div class="panel-title">Original code</div>
-              <div class="panel-subtitle">Your full app source</div>
-            </div>
-            <div class="panel-actions">
-              <button class="action-btn clear-btn" onclick="clearAll()">Clear all</button>
-            </div>
-          </div>
-          <textarea id="input-editor" placeholder="Paste your full HTML/CSS/JS here…" spellcheck="false"></textarea>
-        </div>
-
-        <div class="editor-panel">
-          <div class="panel-header">
-            <div class="panel-title-group">
-              <div class="panel-title">Stripped output</div>
-              <div class="panel-subtitle">Share this with the LLM</div>
-            </div>
-            <div class="panel-actions">
-              <button class="action-btn copy-btn" onclick="copyPanel('stripped-editor', false)">Copy</button>
-            </div>
-          </div>
-          <textarea id="stripped-editor" placeholder="Stripped code will appear here…" readonly spellcheck="false"></textarea>
-        </div>
+  <header>
+    <div class="brand">
+      <div class="stamp">CLASSIFIED</div>
+      <div class="title-block">
+        <h1>REDACT<span class="slash">/</span>RESTORE</h1>
+        <div class="tagline">Strip the noise before it hits the context window — put it back after</div>
       </div>
     </div>
+    <div class="session-note" id="session-note">No saved session yet</div>
+  </header>
 
-    <div class="phase-divider">↓ LLM makes changes to the stripped code ↓</div>
+  <div class="controls">
+    <span class="controls-label">Redact</span>
+    <div class="chip-row">
+      <button class="chip on" id="chip-styles" onclick="toggleOption('styles')"><span class="dot"></span>&lt;style&gt; contents</button>
+      <button class="chip" id="chip-consts" onclick="toggleOption('consts')"><span class="dot"></span>const/let/var data</button>
+      <button class="chip on" id="chip-assets" onclick="toggleOption('assets')"><span class="dot"></span>base64 assets</button>
+    </div>
+    <div class="v-sep"></div>
+    <div class="stats-strip" id="stats-strip">Paste code below to begin</div>
+  </div>
 
-    <!-- Phase 2: Restore -->
-    <div class="phase phase-2">
-      <div class="phase-header">
-        <div class="phase-number">Phase 2</div>
-        <div class="phase-title">Restore omitted content</div>
-        <div class="phase-desc">Paste LLM's updated code → get fully restored version</div>
-      </div>
-      <div class="editors">
-        <div class="editor-panel">
-          <div class="panel-header">
-            <div class="panel-title-group">
-              <div class="panel-title">Updated code</div>
-              <div class="panel-subtitle">LLM output (still stripped)</div>
-            </div>
-            <div class="panel-actions">
-              <button class="action-btn clear-btn" onclick="clearUpdated()">Clear</button>
-            </div>
+  <!-- Phase 1 -->
+  <div class="phase phase-1">
+    <div class="phase-head">
+      <div class="phase-tag">Phase 01</div>
+      <div class="phase-name">Redact for sharing</div>
+      <div class="phase-sub">Paste or drop original → copy the redacted version → hand it to the LLM</div>
+    </div>
+    <div class="editors">
+      <div class="panel" id="input-panel">
+        <div class="panel-head">
+          <div class="panel-title-group">
+            <div class="panel-title">Original source</div>
+            <div class="panel-sub" id="input-count">—</div>
           </div>
-          <textarea id="updated-editor" placeholder="Paste the LLM's updated code here…" spellcheck="false"></textarea>
+          <div class="panel-actions">
+            <button class="btn" id="upload-btn" onclick="document.getElementById('file-input').click()">Upload file</button>
+            <input type="file" id="file-input" accept=".html,.htm,.css,.js,.jsx,.ts,.tsx,.txt" style="display:none">
+            <button class="btn danger" onclick="clearAll()">Clear all</button>
+          </div>
         </div>
+        <textarea id="input-editor" placeholder="Paste your full HTML/CSS/JS here, or drop a file…" spellcheck="false"></textarea>
+      </div>
 
-        <div class="editor-panel output-panel">
-          <div class="panel-header">
-            <div class="panel-title-group">
-              <div class="panel-title">Restored code</div>
-              <div class="panel-subtitle">Styles &amp; data re-injected</div>
-            </div>
-            <div class="panel-actions">
-              <button class="action-btn copy-green" onclick="copyPanel('restored-editor', true)">Copy</button>
-            </div>
+      <div class="panel" id="stripped-panel">
+        <div class="panel-head">
+          <div class="panel-title-group">
+            <div class="panel-title">Redacted output</div>
+            <div class="panel-sub" id="stripped-count">—</div>
           </div>
-          <textarea id="restored-editor" placeholder="Fully restored code will appear here…" readonly spellcheck="false"></textarea>
-          <div class="restore-status" id="restore-status">Waiting for updated code…</div>
+          <div class="panel-actions">
+            <div class="view-toggle">
+              <button id="view-raw-btn" class="active" onclick="setStrippedView('raw')">Raw</button>
+              <button id="view-preview-btn" onclick="setStrippedView('preview')">Redacted</button>
+            </div>
+            <button class="btn primary" onclick="copyPanel('stripped-editor', false)">Copy</button>
+            <button class="btn" onclick="downloadText(strippedEditor.value, 'redacted-source.txt')">↓</button>
+          </div>
+        </div>
+        <textarea id="stripped-editor" placeholder="Redacted code will appear here…" readonly spellcheck="false"></textarea>
+        <div class="preview" id="stripped-preview"></div>
+        <div class="manifest" id="stripped-manifest" style="display:none;">
+          <button class="manifest-toggle" id="manifest-toggle" onclick="toggleManifest()">
+            <span class="chev">▸</span><span id="manifest-summary">0 segments redacted</span>
+          </button>
+          <div class="manifest-list" id="manifest-list"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="toast" id="toast">✓ Copied to clipboard</div>
+  <div class="runoff">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v15m0 0l-5-5m5 5l5-5"/></svg>
+    LLM edits the redacted code
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v15m0 0l-5-5m5 5l5-5"/></svg>
+  </div>
 
-  <footer>
-    <span>Made by Kay 🧡</span>
-    <span id="char-count">—</span>
-  </footer>
+  <!-- Phase 2 -->
+  <div class="phase phase-2">
+    <div class="phase-head">
+      <div class="phase-tag">Phase 02</div>
+      <div class="phase-name">Restore what was redacted</div>
+      <div class="phase-sub">Paste the LLM's edited (still-redacted) code → get the full file back</div>
+    </div>
+    <div class="editors">
+      <div class="panel" id="updated-panel">
+        <div class="panel-head">
+          <div class="panel-title-group">
+            <div class="panel-title">Edited code</div>
+            <div class="panel-sub">Still contains redaction markers</div>
+          </div>
+          <div class="panel-actions">
+            <button class="btn danger" onclick="clearUpdated()">Clear</button>
+          </div>
+        </div>
+        <textarea id="updated-editor" placeholder="Paste the LLM's edited code here…" spellcheck="false"></textarea>
+      </div>
 
-  <script>
-    const inputEditor   = document.getElementById('input-editor');
-    const strippedEditor = document.getElementById('stripped-editor');
-    const updatedEditor = document.getElementById('updated-editor');
-    const restoredEditor = document.getElementById('restored-editor');
-    const toast         = document.getElementById('toast');
-    const statsEl       = document.getElementById('stats');
-    const charCountEl   = document.getElementById('char-count');
-    const restoreStatus = document.getElementById('restore-status');
+      <div class="panel" id="restored-panel">
+        <div class="panel-head">
+          <div class="panel-title-group">
+            <div class="panel-title">Restored output</div>
+            <div class="panel-sub" id="restored-count">—</div>
+          </div>
+          <div class="panel-actions">
+            <button class="btn primary-green" onclick="copyPanel('restored-editor', true)">Copy</button>
+            <button class="btn" onclick="downloadText(restoredEditor.value, 'restored-source.txt')">↓</button>
+          </div>
+        </div>
+        <textarea id="restored-editor" placeholder="Fully restored code will appear here…" readonly spellcheck="false"></textarea>
+        <div class="status-line" id="restore-status">Waiting for edited code…</div>
+      </div>
+    </div>
+  </div>
 
-    const options = { styles: true, consts: false };
+</div>
 
-    // Stores extracted segments: array of { placeholder, original }
-    // Placeholders are embedded in the stripped output and matched on restore.
-    let extracted = [];
+<div class="toast" id="toast"></div>
 
-    // ── Toggle options ──────────────────────────────────────────────
-    function toggleOption(key) {
-      options[key] = !options[key];
-      document.getElementById('toggle-' + key).classList.toggle('on', options[key]);
-      const badge = document.getElementById('badge-' + key);
-      if (badge) badge.classList.toggle('active', options[key]);
+<footer>
+  <span>Made by Kay 🧡 — nothing you paste here leaves your browser</span>
+  <span><kbd>⌘/Ctrl</kbd>+<kbd>S</kbd> downloads restored · <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> clears all</span>
+</footer>
+
+<script>
+  const inputEditor    = document.getElementById('input-editor');
+  const strippedEditor = document.getElementById('stripped-editor');
+  const strippedPreview= document.getElementById('stripped-preview');
+  const updatedEditor  = document.getElementById('updated-editor');
+  const restoredEditor = document.getElementById('restored-editor');
+  const toast          = document.getElementById('toast');
+  const statsStrip     = document.getElementById('stats-strip');
+  const inputCount     = document.getElementById('input-count');
+  const strippedCount  = document.getElementById('stripped-count');
+  const restoredCount  = document.getElementById('restored-count');
+  const restoreStatus  = document.getElementById('restore-status');
+  const sessionNote    = document.getElementById('session-note');
+  const manifestWrap    = document.getElementById('stripped-manifest');
+  const manifestToggle  = document.getElementById('manifest-toggle');
+  const manifestList    = document.getElementById('manifest-list');
+  const manifestSummary = document.getElementById('manifest-summary');
+
+  const options = { styles: true, consts: false, assets: true };
+  let extracted = [];
+  let strippedView = 'raw';
+  let saveTimer = null;
+
+  /* ───────────────────────── option toggles ───────────────────────── */
+  function toggleOption(key){
+    options[key] = !options[key];
+    document.getElementById('chip-' + key).classList.toggle('on', options[key]);
+    processHtml();
+    queueSave();
+  }
+
+  /* ───────────────────────── bracket-aware value scanner ───────────────────────── */
+  function findMatchingBracket(str, startIndex){
+    const open = str[startIndex];
+    const close = open === '[' ? ']' : '}';
+    let depth = 0;
+    for (let i = startIndex; i < str.length; i++){
+      const ch = str[i];
+      if (ch === '"' || ch === "'"){
+        const q = ch; let j = i + 1;
+        while (j < str.length && !(str[j] === q && str[j-1] !== '\\')) j++;
+        i = j; continue;
+      }
+      if (ch === '`'){
+        let j = i + 1;
+        while (j < str.length && !(str[j] === '`' && str[j-1] !== '\\')) j++;
+        i = j; continue;
+      }
+      if (ch === '/' && str[i+1] === '/'){
+        let j = str.indexOf('\n', i); i = j === -1 ? str.length : j; continue;
+      }
+      if (ch === '/' && str[i+1] === '*'){
+        let j = str.indexOf('*/', i+2); i = j === -1 ? str.length : j+1; continue;
+      }
+      if (ch === open) depth++;
+      else if (ch === close){ depth--; if (depth === 0) return i; }
+    }
+    return -1;
+  }
+
+  function extractDeclarations(html, startIdx){
+    const results = [];
+    const re = /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*/g;
+    let match, output = '', lastIndex = 0, idx = startIdx;
+    while ((match = re.exec(html))){
+      const declEnd = re.lastIndex;
+      const nextChar = html[declEnd];
+      let valueEnd = -1;
+      if (nextChar === '[' || nextChar === '{'){
+        valueEnd = findMatchingBracket(html, declEnd);
+      } else if (nextChar === '`'){
+        let j = declEnd + 1;
+        while (j < html.length && !(html[j] === '`' && html[j-1] !== '\\')) j++;
+        valueEnd = j;
+      } else if (nextChar === '"' || nextChar === "'"){
+        const q = nextChar; let j = declEnd + 1;
+        while (j < html.length && !(html[j] === q && html[j-1] !== '\\')) j++;
+        if (j - declEnd >= 40) valueEnd = j;
+      }
+      if (valueEnd === -1 || valueEnd >= html.length) continue;
+
+      const value = html.slice(declEnd, valueEnd + 1);
+      output += html.slice(lastIndex, declEnd);
+      const key = `__OMIT_CONST_${idx++}__`;
+      results.push({ placeholder: key, original: value, kind: match[1] + ' ' + match[2], size: value.length });
+      output += `"DATA OMITTED FOR BREVITY [${key}]. DO NOT invent or restore this data — leave the marker as-is."`;
+      lastIndex = valueEnd + 1;
+      re.lastIndex = valueEnd + 1;
+    }
+    output += html.slice(lastIndex);
+    return { output, results, nextIdx: idx };
+  }
+
+  function extractBase64(html, startIdx){
+    const re = /data:(?:image|font|application|audio|video)\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]{80,}/g;
+    const results = [];
+    let idx = startIdx;
+    const output = html.replace(re, (m) => {
+      const key = `__OMIT_ASSET_${idx++}__`;
+      results.push({ placeholder: key, original: m, kind: 'base64 asset', size: m.length });
+      return key;
+    });
+    return { output, results, nextIdx: idx };
+  }
+
+  /* ───────────────────────── Phase 1: strip ───────────────────────── */
+  inputEditor.addEventListener('input', () => { processHtml(); queueSave(); });
+
+  function processHtml(){
+    const raw = inputEditor.value;
+    inputCount.textContent = raw ? `${raw.length.toLocaleString()} chars · ~${Math.round(raw.length/4).toLocaleString()} tokens` : '—';
+
+    if (!raw.trim()){
+      strippedEditor.value = '';
+      extracted = [];
+      statsStrip.textContent = 'Paste code below to begin';
+      strippedCount.textContent = '—';
+      renderManifest();
+      renderPreview();
+      tryRestore();
+      return;
+    }
+
+    extracted = [];
+    let idx = 0;
+    let html = raw;
+    let removedStyles = 0;
+
+    if (options.styles){
+      html = html.replace(
+        /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
+        (_, open, content, close) => {
+          const key = `__OMIT_STYLE_${idx++}__`;
+          extracted.push({ placeholder: key, original: content, kind: 'style block', size: content.length });
+          removedStyles++;
+          return open + `\n/* STYLING OMITTED FOR BREVITY [${key}]. DO NOT add any styling — leave empty. */\n` + close;
+        }
+      );
+    }
+
+    let removedAssets = 0;
+    if (options.assets){
+      const res = extractBase64(html, idx);
+      html = res.output; idx = res.nextIdx; removedAssets = res.results.length;
+      extracted.push(...res.results);
+    }
+
+    let removedConsts = 0;
+    if (options.consts){
+      const res = extractDeclarations(html, idx);
+      html = res.output; idx = res.nextIdx; removedConsts = res.results.length;
+      extracted.push(...res.results);
+    }
+
+    strippedEditor.value = html;
+
+    const inLen = raw.length, outLen = html.length;
+    const pct = inLen > 0 ? Math.round(((inLen - outLen) / inLen) * 100) : 0;
+    const parts = [];
+    if (removedStyles) parts.push(`${removedStyles} style block${removedStyles > 1 ? 's' : ''}`);
+    if (removedAssets) parts.push(`${removedAssets} asset${removedAssets > 1 ? 's' : ''}`);
+    if (removedConsts) parts.push(`${removedConsts} declaration${removedConsts > 1 ? 's' : ''}`);
+    statsStrip.innerHTML = parts.length
+      ? `Redacted <b>${parts.join(', ')}</b> — <b>${pct}%</b> smaller`
+      : `Nothing matched the active filters`;
+    strippedCount.textContent = `${outLen.toLocaleString()} chars · ~${Math.round(outLen/4).toLocaleString()} tokens`;
+
+    renderManifest();
+    renderPreview();
+    tryRestore();
+  }
+
+  function renderManifest(){
+    if (!extracted.length){ manifestWrap.style.display = 'none'; manifestList.innerHTML=''; return; }
+    manifestWrap.style.display = 'block';
+    const totalSize = extracted.reduce((s,e) => s + e.size, 0);
+    manifestSummary.textContent = `${extracted.length} segment${extracted.length>1?'s':''} redacted · ${totalSize.toLocaleString()} chars hidden`;
+    manifestList.innerHTML = extracted.map(e =>
+      `<div class="manifest-item"><span class="tag">${escapeHtml(e.kind)}</span><span class="fname">${escapeHtml(e.placeholder)}</span><span class="fsize">${e.size.toLocaleString()} ch</span></div>`
+    ).join('');
+  }
+
+  function toggleManifest(){
+    manifestToggle.classList.toggle('open');
+    manifestList.classList.toggle('open');
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderPreview(){
+    const text = strippedEditor.value;
+    if (!text){ strippedPreview.innerHTML = ''; return; }
+    let escaped = escapeHtml(text);
+    for (const item of extracted){
+      const label = `████ ${item.kind} · ${item.size.toLocaleString()}ch`;
+      escaped = escaped.split(item.placeholder).join(`<span class="redact-bar" title="${escapeHtml(item.placeholder)}">${escapeHtml(label)}</span>`);
+    }
+    strippedPreview.innerHTML = escaped;
+  }
+
+  function setStrippedView(mode){
+    strippedView = mode;
+    document.getElementById('view-raw-btn').classList.toggle('active', mode === 'raw');
+    document.getElementById('view-preview-btn').classList.toggle('active', mode === 'preview');
+    strippedEditor.classList.toggle('hidden-by-preview', mode === 'preview');
+    strippedPreview.classList.toggle('active', mode === 'preview');
+    if (mode === 'preview') renderPreview();
+  }
+
+  /* ───────────────────────── Phase 2: restore ───────────────────────── */
+  updatedEditor.addEventListener('input', () => { tryRestore(); queueSave(); });
+
+  function tryRestore(){
+    const updated = updatedEditor.value.trim();
+    document.getElementById('restored-panel').classList.remove('output-good');
+
+    if (!updated){
+      restoredEditor.value = '';
+      restoredCount.textContent = '—';
+      restoreStatus.innerHTML = 'Waiting for edited code…';
+      restoreStatus.className = 'status-line';
+      return;
+    }
+
+    if (extracted.length === 0){
+      restoredEditor.value = updated;
+      restoredCount.textContent = `${updated.length.toLocaleString()} chars`;
+      restoreStatus.innerHTML = 'Nothing was redacted — output passed through unchanged.';
+      restoreStatus.className = 'status-line warn';
+      return;
+    }
+
+    let restored = updated;
+    let matchCount = 0;
+    const missing = [];
+
+    for (const { placeholder, original } of extracted){
+      const bare = placeholder.replace(/^"|"$/g, '');
+      const patterns = [placeholder, bare, `"${bare}"`, `'${bare}'`, `\`${bare}\``];
+      let found = false;
+      for (const p of patterns){
+        if (restored.includes(p)){
+          restored = restored.split(p).join(original);
+          matchCount++; found = true; break;
+        }
+      }
+      if (!found) missing.push(bare);
+    }
+
+    restoredEditor.value = restored;
+    restoredCount.textContent = `${restored.length.toLocaleString()} chars · ~${Math.round(restored.length/4).toLocaleString()} tokens`;
+
+    if (missing.length === 0){
+      restoreStatus.innerHTML = `<span class="status-stamp">DECLASSIFIED</span> All ${matchCount} segment${matchCount!==1?'s':''} restored.`;
+      restoreStatus.className = 'status-line ok';
+      document.getElementById('restored-panel').classList.add('output-good');
+    } else {
+      restoreStatus.innerHTML = `⚠ Restored ${matchCount}/${extracted.length}. Missing marker${missing.length>1?'s':''}: ${missing.map(escapeHtml).join(', ')} — the LLM may have altered or removed ${missing.length>1?'them':'it'}.`;
+      restoreStatus.className = 'status-line warn';
+    }
+  }
+
+  /* ───────────────────────── file upload / drag-drop ───────────────────────── */
+  document.getElementById('file-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    readFileIntoInput(file);
+    e.target.value = '';
+  });
+
+  function readFileIntoInput(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      inputEditor.value = reader.result;
+      processHtml(); queueSave();
+      showToast(`Loaded ${file.name}`);
+    };
+    reader.onerror = () => showToast('Could not read that file', 'red');
+    reader.readAsText(file);
+  }
+
+  const inputPanel = document.getElementById('input-panel');
+  ['dragenter','dragover'].forEach(evt =>
+    inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.add('drag-over'); })
+  );
+  ['dragleave','drop'].forEach(evt =>
+    inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.remove('drag-over'); })
+  );
+  inputPanel.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) readFileIntoInput(file);
+  });
+
+  /* ───────────────────────── utilities ───────────────────────── */
+  function showToast(msg, color){
+    toast.textContent = msg;
+    toast.className = 'toast show' + (color ? ' ' + color : '');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  function copyPanel(id, isGood){
+    const val = document.getElementById(id).value;
+    if (!val){ showToast('Nothing to copy yet', 'red'); return; }
+    navigator.clipboard.writeText(val).catch(() => {
+      const el = document.getElementById(id);
+      el.select(); document.execCommand('copy');
+    });
+    showToast('Copied to clipboard', isGood ? 'green' : null);
+  }
+
+  function downloadText(text, filename){
+    if (!text){ showToast('Nothing to download yet', 'red'); return; }
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showToast(`Downloaded ${filename}`);
+  }
+
+  function clearAll(){
+    inputEditor.value = ''; strippedEditor.value = '';
+    updatedEditor.value = ''; restoredEditor.value = '';
+    extracted = [];
+    statsStrip.textContent = 'Paste code below to begin';
+    inputCount.textContent = '—'; strippedCount.textContent = '—'; restoredCount.textContent = '—';
+    restoreStatus.textContent = 'Waiting for edited code…';
+    restoreStatus.className = 'status-line';
+    document.getElementById('restored-panel').classList.remove('output-good');
+    renderManifest(); renderPreview();
+    queueSave(true);
+  }
+
+  function clearUpdated(){
+    updatedEditor.value = ''; restoredEditor.value = '';
+    restoredCount.textContent = '—';
+    restoreStatus.textContent = 'Waiting for edited code…';
+    restoreStatus.className = 'status-line';
+    document.getElementById('restored-panel').classList.remove('output-good');
+    queueSave();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key.toLowerCase() === 's'){
+      e.preventDefault();
+      downloadText(restoredEditor.value || strippedEditor.value, 'restored-source.txt');
+    }
+    if (mod && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      clearAll();
+    }
+  });
+
+  /* ───────────────────────── session autosave ───────────────────────── */
+  function queueSave(immediate){
+    clearTimeout(saveTimer);
+    const doSave = async () => {
+      try{
+        await window.storage.set('session', JSON.stringify({
+          input: inputEditor.value,
+          updated: updatedEditor.value,
+          options
+        }), false);
+        sessionNote.textContent = 'Session saved locally';
+        sessionNote.classList.add('show');
+      } catch(err){
+        sessionNote.classList.remove('show');
+        sessionNote.textContent = 'Autosave unavailable';
+      }
+    };
+    if (immediate) doSave(); else saveTimer = setTimeout(doSave, 600);
+  }
+
+  async function restoreSession(){
+    try{
+      const res = await window.storage.get('session', false);
+      if (!res || !res.value) return;
+      const data = JSON.parse(res.value);
+      if (data.input) inputEditor.value = data.input;
+      if (data.updated) updatedEditor.value = data.updated;
+      if (data.options){
+        Object.assign(options, data.options);
+        for (const key of Object.keys(options)){
+          const chip = document.getElementById('chip-' + key);
+          if (chip) chip.classList.toggle('on', options[key]);
+        }
+      }
+      if (data.input || data.updated){
+        sessionNote.textContent = 'Restored your last session';
+        sessionNote.classList.add('show');
+      }
+    } catch(err){
+      /* no saved session yet, or storage unavailable — start fresh */
+    } finally {
       processHtml();
     }
+  }
 
-    // ── Phase 1: Strip ──────────────────────────────────────────────
-    inputEditor.addEventListener('input', processHtml);
-
-    function processHtml() {
-      const raw = inputEditor.value;
-
-      if (!raw.trim()) {
-        strippedEditor.value = '';
-        extracted = [];
-        statsEl.textContent = '—';
-        charCountEl.textContent = '—';
-        tryRestore();
-        return;
-      }
-
-      extracted = [];
-      let idx = 0;
-      let html = raw;
-      let removedStyles = 0;
-      let removedConsts = 0;
-
-      // Strip <style> block contents
-      if (options.styles) {
-        html = html.replace(
-          /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
-          (_, open, content, close) => {
-            const key = `__OMIT_STYLE_${idx++}__`;
-            extracted.push({ placeholder: key, original: content });
-            removedStyles++;
-            // Human-readable message with embedded key for restoration
-            const msg = `\n/* STYLING OMITTED FOR BREVITY [${key}]. DO NOT add any styling — leave empty. */\n`;
-            return open + msg + close;
-          }
-        );
-      }
-
-      // Strip const declarations with array/object values (multi-line aware)
-      if (options.consts) {
-        // Objects and arrays
-        html = html.replace(
-          /^(\s*const\s+\w+\s*=\s*)(\[[\s\S]*?\]|\{[\s\S]*?\})(;?\s*$)/gm,
-          (_, pre, value, semi) => {
-            const key = `__OMIT_CONST_${idx++}__`;
-            extracted.push({ placeholder: key, original: value });
-            removedConsts++;
-            const msg = `"DATA OMITTED FOR BREVITY [${key}]. DO NOT add any data — leave empty."`;
-            return pre + msg + (semi.trim() || ';');
-          }
-        );
-        // Long strings / template literals
-        html = html.replace(
-          /^(\s*const\s+\w+\s*=\s*)(`[\s\S]*?`|"[^"]{40,}"|'[^']{40,}')(;?\s*$)/gm,
-          (_, pre, value, semi) => {
-            const key = `__OMIT_CONST_${idx++}__`;
-            extracted.push({ placeholder: key, original: value });
-            removedConsts++;
-            const msg = `"DATA OMITTED FOR BREVITY [${key}]. DO NOT add any data — leave empty."`;
-            return pre + msg + (semi.trim() || ';');
-          }
-        );
-      }
-
-      strippedEditor.value = html;
-
-      // Stats
-      const inLen = raw.length;
-      const outLen = html.length;
-      const pct = inLen > 0 ? Math.round(((inLen - outLen) / inLen) * 100) : 0;
-      const parts = [];
-      if (removedStyles) parts.push(`${removedStyles} style block${removedStyles > 1 ? 's' : ''}`);
-      if (removedConsts)  parts.push(`${removedConsts} const${removedConsts > 1 ? 's' : ''}`);
-      statsEl.innerHTML = parts.length
-        ? `Removed <b>${parts.join(', ')}</b> — saved <b>${pct}%</b>`
-        : `No removals matched`;
-      charCountEl.textContent = `${outLen.toLocaleString()} chars stripped`;
-
-      tryRestore();
-    }
-
-    // ── Phase 2: Restore ────────────────────────────────────────────
-    updatedEditor.addEventListener('input', tryRestore);
-
-    function tryRestore() {
-      const updated = updatedEditor.value.trim();
-
-      if (!updated) {
-        restoredEditor.value = '';
-        restoreStatus.textContent = 'Waiting for updated code…';
-        restoreStatus.className = 'restore-status';
-        return;
-      }
-
-      if (extracted.length === 0) {
-        // Nothing was stripped — just pass through
-        restoredEditor.value = updated;
-        restoreStatus.textContent = 'Nothing was stripped — output is identical to input.';
-        restoreStatus.className = 'restore-status warn';
-        return;
-      }
-
-      let restored = updated;
-      let matchCount = 0;
-      let missingKeys = [];
-
-      for (const { placeholder, original } of extracted) {
-        // Match the key even if it appears inside quotes (for const values)
-        // The placeholder may appear bare (style) or wrapped in quotes (consts)
-        const bare = placeholder.replace(/^"|"$/g, ''); // strip surrounding quotes if any
-        // Try to match with or without surrounding quotes
-        const patterns = [
-          placeholder,          // exact as stored (e.g. "__OMIT_STYLE_0__" or "__OMIT_CONST_1__" wrapped in quotes)
-          bare,                 // bare key
-          `"${bare}"`,          // double-quoted
-          `'${bare}'`,          // single-quoted
-          `\`${bare}\``,        // backtick
-        ];
-
-        let found = false;
-        for (const p of patterns) {
-          if (restored.includes(p)) {
-            restored = restored.split(p).join(original);
-            matchCount++;
-            found = true;
-            break;
-          }
-        }
-        if (!found) missingKeys.push(bare);
-      }
-
-      restoredEditor.value = restored;
-
-      if (missingKeys.length === 0) {
-        restoreStatus.textContent = `✓ All ${matchCount} segment${matchCount !== 1 ? 's' : ''} restored successfully.`;
-        restoreStatus.className = 'restore-status ok';
-      } else {
-        restoreStatus.textContent = `⚠ Restored ${matchCount}/${extracted.length}. Missing: ${missingKeys.join(', ')}`;
-        restoreStatus.className = 'restore-status warn';
-      }
-    }
-
-    // ── Utilities ───────────────────────────────────────────────────
-    function copyPanel(id, isGreen) {
-      const val = document.getElementById(id).value;
-      if (!val) return;
-      navigator.clipboard.writeText(val).catch(() => {
-        document.getElementById(id).select();
-        document.execCommand('copy');
-      });
-      toast.className = 'toast' + (isGreen ? ' green' : '') + ' show';
-      setTimeout(() => toast.classList.remove('show'), 2000);
-    }
-
-    function clearAll() {
-      inputEditor.value = '';
-      strippedEditor.value = '';
-      updatedEditor.value = '';
-      restoredEditor.value = '';
-      extracted = [];
-      statsEl.textContent = '—';
-      charCountEl.textContent = '—';
-      restoreStatus.textContent = 'Waiting for updated code…';
-      restoreStatus.className = 'restore-status';
-    }
-
-    function clearUpdated() {
-      updatedEditor.value = '';
-      restoredEditor.value = '';
-      restoreStatus.textContent = 'Waiting for updated code…';
-      restoreStatus.className = 'restore-status';
-    }
-  </script>
+  restoreSession();
+</script>
 </body>
 </html>
