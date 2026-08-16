@@ -1,532 +1,580 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>❌ REDACT/RESTORE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>❌ REDACT/RESTORE · size reduction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --paper: #000000;
+      --paper-2: #2527424b;
+      --paper-3: #291919;
+      --ink: #e9e0c9;
+      --ink-soft: #a89d80;
+      --ink-faint: #6e6553;
+      --line: #3a3325;
+      --line-soft: #2a251c;
+      --red: #c94c43;
+      --red-dim: rgba(217,99,90,0.1);
+      --red-dim-2: rgba(217,99,90,0.2);
+      --green: #43e023;
+      --green-dim: rgba(89, 183, 105, 0.1);
+      --green-dim-2: rgba(92, 183, 89, 0.2);
+      --bar: #f4ecd6;
+      --bar-text: #14120d;
+      --font-stamp: 'Special Elite', 'Courier New', monospace;
+      --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
-  :root{
-    --paper:       #000000;
-    --paper-2:     #2527424b;
-    --paper-3:     #291919;
-    --ink:         #e9e0c9;
-    --ink-soft:    #a89d80;
-    --ink-faint:   #6e6553;
-    --line:        #3a3325;
-    --line-soft:   #2a251c;
-    --red:         #c94c43;
-    --red-dim:     rgba(217,99,90,0.1);
-    --red-dim-2:   rgba(217,99,90,0.2);
-    --green:       #43e023;
-    --green-dim:   rgba(89, 183, 105, 0.1);
-    --green-dim-2: rgba(92, 183, 89, 0.2);
-    --bar:         #f4ecd6;
-    --bar-text:    #14120d;
-    --font-stamp:  'Special Elite', 'Courier New', monospace;
-    --font-mono:   'JetBrains Mono', 'Courier New', monospace;
-  }
+      /* segment colours */
+      --col-style: #63ff1b;
+      --col-const: #24ccff;
+      --col-asset: #8347e4;
+      --col-comment: #78909c;
+      --col-svg: #f0e664;
+      --col-repeat: #ff6adf;
+      --col-apptext: #ff0000;
+    }
+    @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; } }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-mono);
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse at 20% -10%, rgba(255,255,255,0.04), transparent 55%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+    }
+    ::selection { background: var(--red); color: var(--paper); }
+    :focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+    .wrap {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 34px 22px 56px;
+    }
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 22px;
+      margin-bottom: 26px;
+      border-bottom: 2px solid var(--ink);
+      position: relative;
+    }
+    .brand { display: flex; align-items: center; gap: 18px; }
+    .stamp {
+      font-family: var(--font-stamp);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      color: var(--red);
+      border: 2px solid var(--red);
+      padding: 5px 10px 4px;
+      border-radius: 3px;
+      transform: rotate(-7deg);
+      background: var(--red-dim);
+      white-space: nowrap;
+      user-select: none;
+    }
+    .title-block { display: flex; flex-direction: column; gap: 5px; }
+    h1 {
+      font-family: var(--font-stamp);
+      font-size: clamp(22px, 3vw, 30px);
+      letter-spacing: 0.01em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    h1 .slash { color: var(--red); }
+    .tagline {
+      font-size: 11.5px;
+      color: var(--ink-soft);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .session-note {
+      font-size: 11px;
+      color: var(--ink-faint);
+      letter-spacing: 0.03em;
+      text-align: right;
+      max-width: 220px;
+    }
+    .session-note.show { color: var(--green); }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin-bottom: 30px;
+    }
+    .controls-label {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .chip:hover { border-color: var(--ink-faint); color: var(--ink); }
+    .chip.on { background: var(--red); border-color: var(--red); color: var(--paper); }
+    .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+    .chip.on .dot { opacity: 1; }
+    .v-sep { width: 1px; height: 22px; background: var(--line); }
+    .stats-strip {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+      text-align: right;
+    }
+    .stats-strip b { color: var(--red); font-weight: 700; }
+    .phase { margin-bottom: 20px; }
+    .phase-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .phase-tag {
+      font-family: var(--font-stamp);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      padding: 4px 10px;
+      border: 1.5px solid var(--ink);
+      border-radius: 3px;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    .phase-2 .phase-tag { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .phase-name {
+      font-family: var(--font-stamp);
+      font-size: 15px;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+    .phase-sub {
+      font-size: 11.5px;
+      color: var(--ink-faint);
+      margin-left: auto;
+      letter-spacing: 0.02em;
+    }
+    .runoff {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin: 6px 0 26px;
+      color: var(--ink-faint);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .runoff::before, .runoff::after {
+      content: '';
+      flex: 1;
+      max-width: 320px;
+      height: 0;
+      border-top: 1px dashed var(--line);
+    }
+    .runoff svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .visual-stats {
+      background: var(--paper-2);
+      border: 1.5px solid var(--ink);
+      border-radius: 7px;
+      padding: 16px 18px 18px;
+      margin: 6px 0 26px;
+    }
+    .vs-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .vs-title {
+      font-family: var(--font-stamp);
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
+    .vs-figure {
+      font-size: 14px;
+      color: var(--green);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .vs-figure.smaller { color: var(--green); }
+    .vs-figure.same { color: var(--ink-soft); }
+    .vs-bar-track {
+      width: 100%;
+      height: 32px;
+      border-radius: 5px;
+      overflow: hidden;
+      display: flex;
+      border: 1px solid var(--line);
+      background: var(--paper-3);
+      position: relative;
+    }
+    .vs-bar-seg {
+      height: 100%;
+      transition: width 0.35s ease;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(0,0,0,0.7);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 4px;
+    }
+    .vs-bar-seg span { padding: 0 3px; }
+    .vs-bar-apptext { background: var(--col-apptext); }
+    .vs-bar-style { background: var(--col-style); }
+    .vs-bar-const { background: var(--col-const); }
+    .vs-bar-asset { background: var(--col-asset); }
+    .vs-bar-comment { background: var(--col-comment); }
+    .vs-bar-svg { background: var(--col-svg); }
+    .vs-bar-repeat { background: var(--col-repeat); }
+    .vs-bar-kept { background: var(--red); }
 
-  @media (prefers-reduced-motion: reduce){
-    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-  }
+    .vs-legend {
+      display: flex;
+      gap: 14px 22px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--ink-soft);
+      letter-spacing: 0.02em;
+    }
+    .vs-legend-item { display: flex; align-items: center; gap: 6px; }
+    .vs-legend-item b { color: var(--ink); }
+    .vs-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .vs-swatch-kept { background: var(--red); }
+    .vs-swatch-apptext { background: var(--col-apptext); }
+    .vs-swatch-style { background: var(--col-style); }
+    .vs-swatch-const { background: var(--col-const); }
+    .vs-swatch-asset { background: var(--col-asset); }
+    .vs-swatch-comment { background: var(--col-comment); }
+    .vs-swatch-svg { background: var(--col-svg); }
+    .vs-swatch-repeat { background: var(--col-repeat); }
 
-  html{ scroll-behavior:smooth; }
-
-  body{
-    font-family:var(--font-mono);
-    background:var(--paper);
-    color:var(--ink);
-    min-height:100vh;
-    background-image:
-      radial-gradient(ellipse at 20% -10%, rgba(255,255,255,0.04), transparent 55%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
-  }
-
-  ::selection{ background:var(--red); color:var(--paper); }
-
-  :focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
-
-  .wrap{
-    max-width:1360px;
-    margin:0 auto;
-    padding:34px 22px 56px;
-  }
-
-  /* ── Header ─────────────────────────────────────────────── */
-  header{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:24px;
-    padding-bottom:22px;
-    margin-bottom:26px;
-    border-bottom:2px solid var(--ink);
-    position:relative;
-  }
-
-  .brand{ display:flex; align-items:center; gap:18px; }
-
-  .stamp{
-    font-family:var(--font-stamp);
-    font-size:11px;
-    letter-spacing:0.14em;
-    color:var(--red);
-    border:2px solid var(--red);
-    padding:5px 10px 4px;
-    border-radius:3px;
-    transform:rotate(-7deg);
-    background:var(--red-dim);
-    white-space:nowrap;
-    user-select:none;
-  }
-
-  .title-block{ display:flex; flex-direction:column; gap:5px; }
-
-  h1{
-    font-family:var(--font-stamp);
-    font-size:clamp(22px,3vw,30px);
-    letter-spacing:0.01em;
-    color:var(--ink);
-    line-height:1;
-  }
-  h1 .slash{ color:var(--red); }
-
-  .tagline{
-    font-size:11.5px;
-    color:var(--ink-soft);
-    letter-spacing:0.06em;
-    text-transform:uppercase;
-  }
-
-  .session-note{
-    font-size:11px;
-    color:var(--ink-faint);
-    letter-spacing:0.03em;
-    text-align:right;
-    max-width:220px;
-  }
-  .session-note.show{ color:var(--green); }
-
-  /* ── Controls bar ──────────────────────────────────────── */
-  .controls{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    flex-wrap:wrap;
-    padding:12px 16px;
-    background:var(--paper-2);
-    border:1px solid var(--line);
-    border-radius:6px;
-    margin-bottom:30px;
-  }
-
-  .controls-label{
-    font-size:11px;
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    color:var(--ink-soft);
-    font-weight:600;
-  }
-
-  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
-
-  .chip{
-    font-family:var(--font-mono);
-    font-size:12px;
-    font-weight:500;
-    padding:6px 12px;
-    border-radius:20px;
-    border:1px solid var(--line);
-    background:var(--paper);
-    color:var(--ink-soft);
-    cursor:pointer;
-    transition:background 0.15s, border-color 0.15s, color 0.15s;
-    letter-spacing:0.02em;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .chip:hover{ border-color:var(--ink-faint); color:var(--ink); }
-  .chip.on{ background:var(--red); border-color:var(--red); color:var(--paper); }
-  .chip .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.55; }
-  .chip.on .dot{ opacity:1; }
-
-  .v-sep{ width:1px; height:22px; background:var(--line); }
-
-  .stats-strip{
-    margin-left:auto;
-    font-size:12px;
-    color:var(--ink-soft);
-    letter-spacing:0.02em;
-    text-align:right;
-  }
-  .stats-strip b{ color:var(--red); font-weight:700; }
-
-  /* ── Phase sections ────────────────────────────────────── */
-  .phase{ margin-bottom:20px; }
-
-  .phase-head{
-    display:flex;
-    align-items:baseline;
-    gap:14px;
-    margin-bottom:14px;
-    flex-wrap:wrap;
-  }
-
-  .phase-tag{
-    font-family:var(--font-stamp);
-    font-size:11px;
-    letter-spacing:0.1em;
-    padding:4px 10px;
-    border:1.5px solid var(--ink);
-    border-radius:3px;
-    color:var(--ink);
-    background:var(--paper);
-  }
-  .phase-2 .phase-tag{ border-color:var(--green); color:var(--green); background:var(--green-dim); }
-
-  .phase-name{
-    font-family:var(--font-stamp);
-    font-size:15px;
-    color:var(--ink);
-    letter-spacing:0.01em;
-  }
-
-  .phase-sub{
-    font-size:11.5px;
-    color:var(--ink-faint);
-    margin-left:auto;
-    letter-spacing:0.02em;
-  }
-
-  .runoff{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:14px;
-    margin:6px 0 26px;
-    color:var(--ink-faint);
-    font-size:11px;
-    letter-spacing:0.14em;
-    text-transform:uppercase;
-  }
-  .runoff::before,.runoff::after{
-    content:'';
-    flex:1;
-    max-width:320px;
-    height:0;
-    border-top:1px dashed var(--line);
-  }
-  .runoff svg{ width:14px; height:14px; flex-shrink:0; }
-
-  /* ── Editors ───────────────────────────────────────────── */
-  .editors{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px;
-    align-items:stretch;
-  }
-
-  @media (max-width:900px){
-    .editors{ grid-template-columns:1fr; }
-    header{ flex-direction:column; align-items:flex-start; gap:14px; }
-    .session-note{ text-align:left; }
-    .phase-sub{ display:none; }
-    .stats-strip{ margin-left:0; text-align:left; width:100%; }
-  }
-
-  .panel{
-    background:var(--paper);
-    border:1.5px solid var(--ink);
-    border-radius:7px;
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-    position:relative;
-  }
-  .panel.drag-over{ border-color:var(--red); background:var(--red-dim); }
-  .panel.output-good{ border-color:var(--green); }
-
-  .panel-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding:10px 14px;
-    background:var(--paper-2);
-    border-bottom:1px solid var(--line);
-    min-height:44px;
-    flex-wrap:wrap;
-  }
-
-  .panel-title-group{ display:flex; flex-direction:column; gap:1px; }
-  .panel-title{
-    font-family:var(--font-stamp);
-    font-size:12.5px;
-    letter-spacing:0.03em;
-    color:var(--ink);
-  }
-  .panel-sub{ font-size:10.5px; color:var(--ink-faint); letter-spacing:0.02em; }
-
-  .panel-actions{ display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-
-  .btn{
-    font-family:var(--font-mono);
-    font-size:11.5px;
-    font-weight:500;
-    padding:5px 10px;
-    border-radius:4px;
-    border:1px solid var(--line);
-    background:transparent;
-    color:var(--ink-soft);
-    cursor:pointer;
-    transition:all 0.15s;
-    letter-spacing:0.02em;
-    white-space:nowrap;
-  }
-  .btn:hover{ border-color:var(--ink); color:var(--ink); background:var(--paper-3); }
-  .btn.primary:hover{ border-color:var(--red); color:var(--red); background:var(--red-dim); }
-  .btn.primary-green:hover{ border-color:var(--green); color:var(--green); background:var(--green-dim); }
-  .btn.danger:hover{ border-color:var(--red); color:var(--red); background:var(--red-dim); }
-
-  .view-toggle{ display:flex; border:1px solid var(--line); border-radius:4px; overflow:hidden; }
-  .view-toggle button{
-    font-family:var(--font-mono);
-    font-size:11px;
-    padding:5px 9px;
-    border:none;
-    background:transparent;
-    color:var(--ink-faint);
-    cursor:pointer;
-  }
-  .view-toggle button.active{ background:var(--ink); color:var(--paper); }
-
-  textarea{
-    width:100%;
-    height:340px;
-    padding:14px;
-    background:transparent;
-    color:var(--ink);
-    border:none;
-    resize:vertical;
-    font-family:var(--font-mono);
-    font-size:12.5px;
-    line-height:1.6;
-    flex-grow:1;
-    outline:none;
-    caret-color:var(--red);
-  }
-  textarea::placeholder{ color:var(--ink-faint); opacity:0.7; }
-  textarea[readonly]{ color:var(--ink-soft); }
-
-  .preview{
-    width:100%;
-    height:340px;
-    padding:14px;
-    overflow:auto;
-    font-family:var(--font-mono);
-    font-size:12.5px;
-    line-height:1.6;
-    white-space:pre-wrap;
-    word-break:break-word;
-    color:var(--ink);
-    display:none;
-  }
-  .preview.active{ display:block; }
-  textarea.hidden-by-preview{ display:none; }
-
-  .redact-bar{
-    display:inline-block;
-    background:var(--bar);
-    color:var(--bar-text);
-    border-radius:2px;
-    padding:0 6px;
-    font-size:10.5px;
-    letter-spacing:0.06em;
-    font-family:var(--font-mono);
-    vertical-align:1px;
-    cursor:default;
-  }
-
-  .status-line{
-    padding:8px 14px;
-    font-size:11px;
-    letter-spacing:0.02em;
-    border-top:1px solid var(--line);
-    background:var(--paper-2);
-    color:var(--ink-faint);
-    min-height:34px;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .status-line.ok{ color:var(--green); }
-  .status-line.warn{ color:var(--red); }
-
-  .status-stamp{
-    font-family:var(--font-stamp);
-    font-size:10px;
-    letter-spacing:0.08em;
-    padding:2px 8px;
-    border:1.5px solid var(--green);
-    border-radius:3px;
-    color:var(--green);
-    background:var(--green-dim);
-    transform:rotate(-4deg);
-    white-space:nowrap;
-  }
-
-  /* ── Manifest (extracted segments log) ────────────────── */
-  .manifest{
-    border-top:1px solid var(--line);
-    background:var(--paper-2);
-  }
-  .manifest-toggle{
-    width:100%;
-    text-align:left;
-    padding:8px 14px;
-    font-family:var(--font-mono);
-    font-size:11px;
-    letter-spacing:0.03em;
-    color:var(--ink-soft);
-    background:none;
-    border:none;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .manifest-toggle:hover{ color:var(--ink); }
-  .manifest-toggle .chev{ transition:transform 0.15s; }
-  .manifest-toggle.open .chev{ transform:rotate(90deg); }
-  .manifest-list{
-    display:none;
-    max-height:140px;
-    overflow-y:auto;
-    padding:0 14px 10px;
-  }
-  .manifest-list.open{ display:block; }
-  .manifest-item{
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    font-size:11px;
-    padding:4px 0;
-    border-bottom:1px dotted var(--line);
-    color:var(--ink-soft);
-  }
-  .manifest-item:last-child{ border-bottom:none; }
-  .manifest-item .tag{
-    font-size:9.5px;
-    letter-spacing:0.05em;
-    padding:1px 6px;
-    border-radius:3px;
-    background:var(--paper-3);
-    color:var(--ink-soft);
-    text-transform:uppercase;
-    flex-shrink:0;
-  }
-  .manifest-item .fname{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .manifest-item .fsize{ color:var(--ink-faint); flex-shrink:0; }
-
-  /* ── Toast ─────────────────────────────────────────────── */
-  .toast{
-    position:fixed;
-    bottom:26px;
-    right:26px;
-    background:var(--ink);
-    color:var(--paper);
-    padding:10px 18px;
-    border-radius:5px;
-    font-family:var(--font-mono);
-    font-size:12.5px;
-    font-weight:500;
-    letter-spacing:0.03em;
-    opacity:0;
-    transform:translateY(10px);
-    transition:opacity 0.2s ease, transform 0.2s ease;
-    z-index:1000;
-    pointer-events:none;
-    border:1px solid var(--ink);
-  }
-  .toast.show{ opacity:1; transform:translateY(0); }
-  .toast.green{ background:var(--green); border-color:var(--green); }
-  .toast.red{ background:var(--red); border-color:var(--red); }
-
-  /* ── Footer ────────────────────────────────────────────── */
-  footer{
-    margin-top:34px;
-    padding-top:16px;
-    border-top:1px solid var(--line);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    font-size:11px;
-    color:var(--ink-faint);
-    letter-spacing:0.03em;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  footer kbd{
-    font-family:var(--font-mono);
-    background:var(--paper-2);
-    border:1px solid var(--line);
-    border-radius:3px;
-    padding:1px 5px;
-    font-size:10px;
-    color:var(--ink-soft);
-  }
-
-  textarea::-webkit-scrollbar, .preview::-webkit-scrollbar, .manifest-list::-webkit-scrollbar{ width:7px; }
-  textarea::-webkit-scrollbar-track, .preview::-webkit-scrollbar-track{ background:transparent; }
-  textarea::-webkit-scrollbar-thumb, .preview::-webkit-scrollbar-thumb{ background:var(--line); border-radius:4px; }
-  textarea::-webkit-scrollbar-thumb:hover, .preview::-webkit-scrollbar-thumb:hover{ background:var(--ink-faint); }
-</style>
+    .editors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+    @media (max-width: 900px) {
+      .editors { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; gap: 14px; }
+      .session-note { text-align: left; }
+      .phase-sub { display: none; }
+      .stats-strip { margin-left: 0; text-align: left; width: 100%; }
+    }
+    .panel {
+      background: var(--paper);
+      border: 1.5px solid var(--ink);
+      border-radius: 7px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    .panel.drag-over { border-color: var(--red); background: var(--red-dim); }
+    .panel.output-good { border-color: var(--green); }
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--paper-2);
+      border-bottom: 1px solid var(--line);
+      min-height: 44px;
+      flex-wrap: wrap;
+    }
+    .panel-title-group { display: flex; flex-direction: column; gap: 1px; }
+    .panel-title {
+      font-family: var(--font-stamp);
+      font-size: 12.5px;
+      letter-spacing: 0.03em;
+      color: var(--ink);
+    }
+    .panel-sub { font-size: 10.5px; color: var(--ink-faint); letter-spacing: 0.02em; }
+    .panel-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: var(--ink); color: var(--ink); background: var(--paper-3); }
+    .btn.primary:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+    .btn.primary-green:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .btn.danger:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+    .view-toggle { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+    .view-toggle button {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 5px 9px;
+      border: none;
+      background: transparent;
+      color: var(--ink-faint);
+      cursor: pointer;
+    }
+    .view-toggle button.active { background: var(--ink); color: var(--paper); }
+    textarea {
+      width: 100%;
+      height: 340px;
+      padding: 14px;
+      background: transparent;
+      color: var(--ink);
+      border: none;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      flex-grow: 1;
+      outline: none;
+      caret-color: var(--red);
+    }
+    textarea::placeholder { color: var(--ink-faint); opacity: 0.7; }
+    textarea[readonly] { color: var(--ink-soft); }
+    .preview {
+      width: 100%;
+      height: 340px;
+      padding: 14px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--ink);
+      display: none;
+    }
+    .preview.active { display: block; }
+    textarea.hidden-by-preview { display: none; }
+    .redact-bar {
+      display: inline-block;
+      background: var(--bar);
+      color: var(--bar-text);
+      border-radius: 2px;
+      padding: 0 6px;
+      font-size: 10.5px;
+      letter-spacing: 0.06em;
+      font-family: var(--font-mono);
+      vertical-align: 1px;
+      cursor: default;
+    }
+    .status-line {
+      padding: 8px 14px;
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      border-top: 1px solid var(--line);
+      background: var(--paper-2);
+      color: var(--ink-faint);
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .status-line.ok { color: var(--green); }
+    .status-line.warn { color: var(--red); }
+    .status-stamp {
+      font-family: var(--font-stamp);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border: 1.5px solid var(--green);
+      border-radius: 3px;
+      color: var(--green);
+      background: var(--green-dim);
+      transform: rotate(-4deg);
+      white-space: nowrap;
+    }
+    .manifest {
+      border-top: 1px solid var(--line);
+      background: var(--paper-2);
+    }
+    .manifest-toggle {
+      width: 100%;
+      text-align: left;
+      padding: 8px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.03em;
+      color: var(--ink-soft);
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .manifest-toggle:hover { color: var(--ink); }
+    .manifest-toggle .chev { transition: transform 0.15s; }
+    .manifest-toggle.open .chev { transform: rotate(90deg); }
+    .manifest-list {
+      display: none;
+      max-height: 140px;
+      overflow-y: auto;
+      padding: 0 14px 10px;
+    }
+    .manifest-list.open { display: block; }
+    .manifest-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      padding: 4px 0;
+      border-bottom: 1px dotted var(--line);
+      color: var(--ink-soft);
+    }
+    .manifest-item:last-child { border-bottom: none; }
+    .manifest-item .tag {
+      font-size: 9.5px;
+      letter-spacing: 0.05em;
+      padding: 1px 6px;
+      border-radius: 3px;
+      background: var(--paper-3);
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .manifest-item .fname { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .manifest-item .fsize { color: var(--ink-faint); flex-shrink: 0; }
+    .toast {
+      position: fixed;
+      bottom: 26px;
+      right: 26px;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 10px 18px;
+      border-radius: 5px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 1000;
+      pointer-events: none;
+      border: 1px solid var(--ink);
+    }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.green { background: var(--green); border-color: var(--green); }
+    .toast.red { background: var(--red); border-color: var(--red); }
+    footer {
+      margin-top: 34px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--ink-faint);
+      letter-spacing: 0.03em;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    footer kbd {
+      font-family: var(--font-mono);
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 10px;
+      color: var(--ink-soft);
+    }
+    textarea::-webkit-scrollbar, .preview::-webkit-scrollbar, .manifest-list::-webkit-scrollbar { width: 7px; }
+    textarea::-webkit-scrollbar-track, .preview::-webkit-scrollbar-track { background: transparent; }
+    textarea::-webkit-scrollbar-thumb, .preview::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+    textarea::-webkit-scrollbar-thumb:hover, .preview::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+  </style>
 </head>
 <body>
 <div class="wrap">
- 
   <header>
     <div class="brand">
       <div class="stamp">CLASSIFIED</div>
       <div class="title-block">
         <h1>REDACT<span class="slash">/</span>RESTORE</h1>
-        <div class="tagline">Strip the noise before it hits the context window — put it back after</div>
+        <div class="tagline">Strip the noise — put it back after</div>
       </div>
     </div>
     <div class="session-note" id="session-note">No saved session yet</div>
   </header>
- 
+
   <div class="controls">
     <span class="controls-label">Redact</span>
     <div class="chip-row">
-      <button class="chip on" id="chip-styles" onclick="toggleOption('styles')"><span class="dot"></span>&lt;style&gt; contents</button>
-      <button class="chip" id="chip-consts" onclick="toggleOption('consts')"><span class="dot"></span>const/let/var data</button>
-      <button class="chip on" id="chip-assets" onclick="toggleOption('assets')"><span class="dot"></span>base64 assets</button>
+      <button class="chip on" id="chip-styles" onclick="toggleOption('styles')"><span class="dot"></span>&lt;style&gt;</button>
+      <button class="chip" id="chip-consts" onclick="toggleOption('consts')"><span class="dot"></span>const/let/var</button>
+      <button class="chip on" id="chip-assets" onclick="toggleOption('assets')"><span class="dot"></span>base64</button>
       <button class="chip" id="chip-comments" onclick="toggleOption('comments')"><span class="dot"></span>comments</button>
-      <button class="chip" id="chip-svg" onclick="toggleOption('svg')"><span class="dot"></span>inline SVG icons</button>
-      <button class="chip" id="chip-repeats" onclick="toggleOption('repeats')"><span class="dot"></span>repeated blocks</button>
+      <button class="chip" id="chip-svg" onclick="toggleOption('svg')"><span class="dot"></span>SVG icons</button>
+      <button class="chip" id="chip-repeats" onclick="toggleOption('repeats')"><span class="dot"></span>repeated</button>
     </div>
     <div class="v-sep"></div>
     <span class="controls-label">Compress</span>
     <div class="chip-row">
-      <button class="chip" id="chip-minify" onclick="toggleOption('minify')"><span class="dot"></span>minify shell</button>
+      <button class="chip" id="chip-minify" onclick="toggleOption('minify')"><span class="dot"></span>minify</button>
     </div>
     <div class="v-sep"></div>
-    <div class="stats-strip" id="stats-strip">Paste code below to begin</div>
+    <div class="stats-strip" id="stats-strip">Paste code below</div>
   </div>
- 
+
   <!-- Phase 1 -->
   <div class="phase phase-1">
     <div class="phase-head">
       <div class="phase-tag">Phase 01</div>
       <div class="phase-name">Redact for sharing</div>
-      <div class="phase-sub">Paste or drop original → copy the redacted version → hand it to the LLM</div>
+      <div class="phase-sub">Paste original → copy redacted → hand to LLM</div>
     </div>
     <div class="editors">
       <div class="panel" id="input-panel">
@@ -536,14 +584,13 @@
             <div class="panel-sub" id="input-count">—</div>
           </div>
           <div class="panel-actions">
-            <button class="btn" id="upload-btn" onclick="document.getElementById('file-input').click()">Upload file</button>
+            <button class="btn" id="upload-btn" onclick="document.getElementById('file-input').click()">Upload</button>
             <input type="file" id="file-input" accept=".html,.htm,.css,.js,.jsx,.ts,.tsx,.txt" style="display:none">
             <button class="btn danger" onclick="clearAll()">Clear all</button>
           </div>
         </div>
-        <textarea id="input-editor" placeholder="Paste your full HTML/CSS/JS here, or drop a file…" spellcheck="false"></textarea>
+        <textarea id="input-editor" placeholder="Paste full HTML/CSS/JS or drop a file…" spellcheck="false"></textarea>
       </div>
- 
       <div class="panel" id="stripped-panel">
         <div class="panel-head">
           <div class="panel-title-group">
@@ -570,19 +617,38 @@
       </div>
     </div>
   </div>
- 
+
+  <!-- VISUAL STATS — shows "X% Smaller" -->
+  <div class="visual-stats" id="visual-stats" style="display:none;">
+    <div class="vs-head">
+      <span class="vs-title">📊 Size reduction</span>
+      <span class="vs-figure" id="vs-figure">—</span>
+    </div>
+    <div class="vs-bar-track" id="vs-bar-track"></div>
+    <div class="vs-legend" id="vs-legend">
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-kept"></span>Kept — <b id="vs-kept-num">0</b> chars (<span id="vs-kept-pct">0%</span>)</span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-apptext"></span>Added text — <b id="vs-apptext-num">0</b></span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-style"></span>Style — <b id="vs-style-num">0</b></span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-const"></span>Const — <b id="vs-const-num">0</b></span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-asset"></span>Asset — <b id="vs-asset-num">0</b></span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-comment"></span>Comment — <b id="vs-comment-num">0</b></span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-svg"></span>SVG — <b id="vs-svg-num">0</b></span>
+      <span class="vs-legend-item"><span class="vs-swatch vs-swatch-repeat"></span>Repeat — <b id="vs-repeat-num">0</b></span>
+    </div>
+  </div>
+
   <div class="runoff">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v15m0 0l-5-5m5 5l5-5"/></svg>
     LLM edits the redacted code
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v15m0 0l-5-5m5 5l5-5"/></svg>
   </div>
- 
+
   <!-- Phase 2 -->
   <div class="phase phase-2">
     <div class="phase-head">
       <div class="phase-tag">Phase 02</div>
       <div class="phase-name">Restore what was redacted</div>
-      <div class="phase-sub">Paste the LLM's edited (still-redacted) code → get the full file back</div>
+      <div class="phase-sub">Paste LLM's edited code → get full file back</div>
     </div>
     <div class="editors">
       <div class="panel" id="updated-panel">
@@ -595,9 +661,8 @@
             <button class="btn danger" onclick="clearUpdated()">Clear</button>
           </div>
         </div>
-        <textarea id="updated-editor" placeholder="Paste the LLM's edited code here…" spellcheck="false"></textarea>
+        <textarea id="updated-editor" placeholder="Paste LLM's edited code here…" spellcheck="false"></textarea>
       </div>
- 
       <div class="panel" id="restored-panel">
         <div class="panel-head">
           <div class="panel-title-group">
@@ -614,530 +679,572 @@
       </div>
     </div>
   </div>
- 
 </div>
- 
+
 <div class="toast" id="toast"></div>
- 
 <footer>
-  <span>Made by Kay 🧡 — nothing you paste here leaves your browser</span>
+  <span>Made by Kay 🧡 — nothing leaves your browser</span>
   <span><kbd>⌘/Ctrl</kbd>+<kbd>S</kbd> downloads restored · <kbd>⌘/Ctrl</kbd>+<kbd>K</kbd> clears all</span>
 </footer>
- 
+
 <script>
-  const inputEditor    = document.getElementById('input-editor');
-  const strippedEditor = document.getElementById('stripped-editor');
-  const strippedPreview= document.getElementById('stripped-preview');
-  const updatedEditor  = document.getElementById('updated-editor');
-  const restoredEditor = document.getElementById('restored-editor');
-  const toast          = document.getElementById('toast');
-  const statsStrip     = document.getElementById('stats-strip');
-  const inputCount     = document.getElementById('input-count');
-  const strippedCount  = document.getElementById('stripped-count');
-  const restoredCount  = document.getElementById('restored-count');
-  const restoreStatus  = document.getElementById('restore-status');
-  const sessionNote    = document.getElementById('session-note');
-  const manifestWrap    = document.getElementById('stripped-manifest');
-  const manifestToggle  = document.getElementById('manifest-toggle');
-  const manifestList    = document.getElementById('manifest-list');
-  const manifestSummary = document.getElementById('manifest-summary');
- 
-  const options = { styles: true, consts: false, assets: true, comments: false, svg: false, repeats: false, minify: false };
-  let extracted = [];
-  let strippedView = 'raw';
-  let saveTimer = null;
- 
-  /* ───────────────────────── option toggles ───────────────────────── */
-  function toggleOption(key){
-    options[key] = !options[key];
-    document.getElementById('chip-' + key).classList.toggle('on', options[key]);
-    processHtml();
-    queueSave();
-  }
- 
-  /* ───────────────────────── bracket-aware value scanner ───────────────────────── */
-  function findMatchingBracket(str, startIndex){
-    const open = str[startIndex];
-    const close = open === '[' ? ']' : '}';
-    let depth = 0;
-    for (let i = startIndex; i < str.length; i++){
-      const ch = str[i];
-      if (ch === '"' || ch === "'"){
-        const q = ch; let j = i + 1;
-        while (j < str.length && !(str[j] === q && str[j-1] !== '\\')) j++;
-        i = j; continue;
+  (function() {
+    const inputEditor = document.getElementById('input-editor');
+    const strippedEditor = document.getElementById('stripped-editor');
+    const strippedPreview = document.getElementById('stripped-preview');
+    const updatedEditor = document.getElementById('updated-editor');
+    const restoredEditor = document.getElementById('restored-editor');
+    const toast = document.getElementById('toast');
+    const statsStrip = document.getElementById('stats-strip');
+    const inputCount = document.getElementById('input-count');
+    const strippedCount = document.getElementById('stripped-count');
+    const restoredCount = document.getElementById('restored-count');
+    const restoreStatus = document.getElementById('restore-status');
+    const sessionNote = document.getElementById('session-note');
+    const manifestWrap = document.getElementById('stripped-manifest');
+    const manifestToggle = document.getElementById('manifest-toggle');
+    const manifestList = document.getElementById('manifest-list');
+    const manifestSummary = document.getElementById('manifest-summary');
+    const visualStats = document.getElementById('visual-stats');
+    const vsFigure = document.getElementById('vs-figure');
+    const vsKeptNum = document.getElementById('vs-kept-num');
+    const vsKeptPct = document.getElementById('vs-kept-pct');
+    const vsApptextNum = document.getElementById('vs-apptext-num');
+    const vsStyleNum = document.getElementById('vs-style-num');
+    const vsConstNum = document.getElementById('vs-const-num');
+    const vsAssetNum = document.getElementById('vs-asset-num');
+    const vsCommentNum = document.getElementById('vs-comment-num');
+    const vsSvgNum = document.getElementById('vs-svg-num');
+    const vsRepeatNum = document.getElementById('vs-repeat-num');
+    const vsBarTrack = document.getElementById('vs-bar-track');
+
+    const options = { styles: true, consts: false, assets: true, comments: false, svg: false, repeats: false, minify: false };
+    let extracted = [];
+    let strippedView = 'raw';
+    let saveTimer = null;
+
+    window.toggleOption = function(key) {
+      options[key] = !options[key];
+      document.getElementById('chip-' + key).classList.toggle('on', options[key]);
+      processHtml();
+      queueSave();
+    };
+
+    function findMatchingBracket(str, startIndex) {
+      const open = str[startIndex];
+      const close = open === '[' ? ']' : '}';
+      let depth = 0;
+      for (let i = startIndex; i < str.length; i++) {
+        const ch = str[i];
+        if (ch === '"' || ch === "'") { const q = ch; let j = i + 1; while (j < str.length && !(str[j] === q && str[j-1] !== '\\')) j++; i = j; continue; }
+        if (ch === '`') { let j = i + 1; while (j < str.length && !(str[j] === '`' && str[j-1] !== '\\')) j++; i = j; continue; }
+        if (ch === '/' && str[i+1] === '/') { let j = str.indexOf('\n', i); i = j === -1 ? str.length : j; continue; }
+        if (ch === '/' && str[i+1] === '*') { let j = str.indexOf('*/', i+2); i = j === -1 ? str.length : j+1; continue; }
+        if (ch === open) depth++;
+        else if (ch === close) { depth--; if (depth === 0) return i; }
       }
-      if (ch === '`'){
-        let j = i + 1;
-        while (j < str.length && !(str[j] === '`' && str[j-1] !== '\\')) j++;
-        i = j; continue;
-      }
-      if (ch === '/' && str[i+1] === '/'){
-        let j = str.indexOf('\n', i); i = j === -1 ? str.length : j; continue;
-      }
-      if (ch === '/' && str[i+1] === '*'){
-        let j = str.indexOf('*/', i+2); i = j === -1 ? str.length : j+1; continue;
-      }
-      if (ch === open) depth++;
-      else if (ch === close){ depth--; if (depth === 0) return i; }
+      return -1;
     }
-    return -1;
-  }
- 
-  function extractDeclarations(html, startIdx){
-    const results = [];
-    const re = /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*/g;
-    let match, output = '', lastIndex = 0, idx = startIdx;
-    while ((match = re.exec(html))){
-      const declEnd = re.lastIndex;
-      const nextChar = html[declEnd];
-      let valueEnd = -1;
-      if (nextChar === '[' || nextChar === '{'){
-        valueEnd = findMatchingBracket(html, declEnd);
-      } else if (nextChar === '`'){
-        let j = declEnd + 1;
-        while (j < html.length && !(html[j] === '`' && html[j-1] !== '\\')) j++;
-        valueEnd = j;
-      } else if (nextChar === '"' || nextChar === "'"){
-        const q = nextChar; let j = declEnd + 1;
-        while (j < html.length && !(html[j] === q && html[j-1] !== '\\')) j++;
-        if (j - declEnd >= 40) valueEnd = j;
+
+    function extractDeclarations(html, startIdx) {
+      const results = [];
+      const re = /\b(const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*/g;
+      let match, output = '', lastIndex = 0, idx = startIdx;
+      while ((match = re.exec(html))) {
+        const declEnd = re.lastIndex;
+        const nextChar = html[declEnd];
+        let valueEnd = -1;
+        if (nextChar === '[' || nextChar === '{') valueEnd = findMatchingBracket(html, declEnd);
+        else if (nextChar === '`') { let j = declEnd + 1; while (j < html.length && !(html[j] === '`' && html[j-1] !== '\\')) j++; valueEnd = j; }
+        else if (nextChar === '"' || nextChar === "'") { const q = nextChar; let j = declEnd + 1; while (j < html.length && !(html[j] === q && html[j-1] !== '\\')) j++; if (j - declEnd >= 40) valueEnd = j; }
+        if (valueEnd === -1 || valueEnd >= html.length) continue;
+        const value = html.slice(declEnd, valueEnd + 1);
+        output += html.slice(lastIndex, declEnd);
+        const key = `__OMIT_CONST_${idx++}__`;
+        results.push({ placeholder: key, original: value, kind: 'const/let/var', size: value.length });
+        output += `"DATA OMITTED FOR BREVITY [${key}]. DO NOT invent or restore this data — leave the marker as-is."`;
+        lastIndex = valueEnd + 1;
+        re.lastIndex = valueEnd + 1;
       }
-      if (valueEnd === -1 || valueEnd >= html.length) continue;
- 
-      const value = html.slice(declEnd, valueEnd + 1);
-      output += html.slice(lastIndex, declEnd);
-      const key = `__OMIT_CONST_${idx++}__`;
-      results.push({ placeholder: key, original: value, kind: match[1] + ' ' + match[2], size: value.length });
-      output += `"DATA OMITTED FOR BREVITY [${key}]. DO NOT invent or restore this data — leave the marker as-is."`;
-      lastIndex = valueEnd + 1;
-      re.lastIndex = valueEnd + 1;
+      output += html.slice(lastIndex);
+      return { output, results, nextIdx: idx };
     }
-    output += html.slice(lastIndex);
-    return { output, results, nextIdx: idx };
-  }
- 
-  function extractBase64(html, startIdx){
-    const re = /data:(?:image|font|application|audio|video)\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]{80,}/g;
-    const results = [];
-    let idx = startIdx;
-    const output = html.replace(re, (m) => {
-      const key = `__OMIT_ASSET_${idx++}__`;
-      results.push({ placeholder: key, original: m, kind: 'base64 asset', size: m.length });
-      return key;
-    });
-    return { output, results, nextIdx: idx };
-  }
- 
-  function extractComments(html, startIdx){
-    const results = [];
-    let idx = startIdx;
- 
-    // HTML comments <!-- -->
-    html = html.replace(/<!--([\s\S]*?)-->/g, (m, content) => {
-      if (/OMITTED FOR BREVITY|DATA OMITTED/.test(content)) return m;
-      const key = `__OMIT_COMMENT_${idx++}__`;
-      results.push({ placeholder: key, original: content, kind: 'HTML comment', size: content.length });
-      return `<!--${key}-->`;
-    });
- 
-    // CSS / JS block comments /* */
-    html = html.replace(/\/\*([\s\S]*?)\*\//g, (m, content) => {
-      if (/OMITTED FOR BREVITY|DATA OMITTED/.test(content)) return m;
-      const key = `__OMIT_COMMENT_${idx++}__`;
-      results.push({ placeholder: key, original: content, kind: 'block comment', size: content.length });
-      return `/*${key}*/`;
-    });
- 
-    // JS line comments — only ones that own their whole line, to avoid eating "//" inside URLs/strings
-    html = html.replace(/^([ \t]*)\/\/(.*)$/gm, (m, indent, content) => {
-      const key = `__OMIT_COMMENT_${idx++}__`;
-      results.push({ placeholder: key, original: content, kind: 'line comment', size: content.length });
-      return `${indent}//${key}`;
-    });
- 
-    return { output: html, results, nextIdx: idx };
-  }
- 
-  function extractSvgIcons(html, startIdx){
-    const results = [];
-    let idx = startIdx;
-    const output = html.replace(/(<svg[^>]*>)([\s\S]*?)(<\/svg>)/gi, (m, open, inner, close) => {
-      if (inner.trim().length < 20) return m; // not worth redacting trivial shapes
-      const key = `__OMIT_SVG_${idx++}__`;
-      results.push({ placeholder: key, original: inner, kind: 'svg icon', size: inner.length });
-      return `${open}<!--${key}-->${close}`;
-    });
-    return { output, results, nextIdx: idx };
-  }
- 
-  function extractRepeats(html, startIdx){
-    const results = [];
-    let idx = startIdx;
-    const seen = new Set();
-    const lines = html.split('\n').map(line => {
-      const trimmed = line.trim();
-      if (trimmed.length < 50 || !trimmed.startsWith('<')) return line;
-      if (!seen.has(trimmed)){ seen.add(trimmed); return line; }
-      const key = `__OMIT_REPEAT_${idx++}__`;
-      results.push({ placeholder: key, original: line, kind: 'repeated block', size: line.length });
-      const indent = line.match(/^\s*/)[0];
-      return `${indent}<!--${key}: identical to an earlier occurrence-->`;
-    });
-    return { output: lines.join('\n'), results, nextIdx: idx };
-  }
- 
-  function minifyShell(html){
-    return html
-      .split('\n')
-      .map(l => l.replace(/^[ \t]+/, '').replace(/[ \t]{2,}/g, ' '))
-      .join('\n')
-      .replace(/\n{2,}/g, '\n');
-  }
- 
-  /* ───────────────────────── Phase 1: strip ───────────────────────── */
-  inputEditor.addEventListener('input', () => { processHtml(); queueSave(); });
- 
-  function buildExplainerBlock(results){
-    if (!results.length) return '';
-    const kinds = [...new Set(results.map(r => r.kind))];
-    const totalChars = results.reduce((s, r) => s + r.size, 0);
-    const lines = [
-      'NOTICE FOR THE MODEL READING THIS FILE:',
-      `This file has been redacted before being sent to you. ${results.length} segment(s) — ${kinds.join(', ')} — totalling ~${totalChars.toLocaleString()} characters were removed and replaced with short markers like __OMIT_TYPE_N__.`,
-      'This is done purely to save context/tokens on content that has no bearing on the task (styling, binary-looking data, decorative markup, comments, duplicate blocks) — none of it was deleted, it lives outside this conversation and will be mechanically reinserted afterward by matching each marker back to its original content.',
-      'Do not attempt to reconstruct, guess, or fill in what a marker stood for. Leave every marker exactly as written, in its original position, character-for-character — including its surrounding quotes/brackets/comment syntax if any — even if it looks incomplete or like a broken reference. If you need to move, duplicate, or delete the code around a marker, keep the marker attached to it verbatim; if a marker must be deleted outright, that omitted content is deleted too.'
-    ];
-    return `<!--\n${lines.join('\n\n')}\n-->\n\n`;
-  }
- 
-  function processHtml(){
-    const raw = inputEditor.value;
-    inputCount.textContent = raw ? `${raw.length.toLocaleString()} chars · ~${Math.round(raw.length/4).toLocaleString()} tokens` : '—';
- 
-    if (!raw.trim()){
-      strippedEditor.value = '';
+
+    function extractBase64(html, startIdx) {
+      const re = /data:(?:image|font|application|audio|video)\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]{80,}/g;
+      const results = []; let idx = startIdx;
+      const output = html.replace(re, (m) => {
+        const key = `__OMIT_ASSET_${idx++}__`;
+        results.push({ placeholder: key, original: m, kind: 'base64 asset', size: m.length });
+        return key;
+      });
+      return { output, results, nextIdx: idx };
+    }
+
+    function extractComments(html, startIdx) {
+      const results = []; let idx = startIdx;
+      html = html.replace(/<!--([\s\S]*?)-->/g, (m, content) => {
+        if (/OMITTED FOR BREVITY|DATA OMITTED/.test(content)) return m;
+        const key = `__OMIT_COMMENT_${idx++}__`;
+        results.push({ placeholder: key, original: content, kind: 'comment', size: content.length });
+        return `<!--${key}-->`;
+      });
+      html = html.replace(/\/\*([\s\S]*?)\*\//g, (m, content) => {
+        if (/OMITTED FOR BREVITY|DATA OMITTED/.test(content)) return m;
+        const key = `__OMIT_COMMENT_${idx++}__`;
+        results.push({ placeholder: key, original: content, kind: 'comment', size: content.length });
+        return `/*${key}*/`;
+      });
+      html = html.replace(/^([ \t]*)\/\/(.*)$/gm, (m, indent, content) => {
+        const key = `__OMIT_COMMENT_${idx++}__`;
+        results.push({ placeholder: key, original: content, kind: 'comment', size: content.length });
+        return `${indent}//${key}`;
+      });
+      return { output: html, results, nextIdx: idx };
+    }
+
+    function extractSvgIcons(html, startIdx) {
+      const results = []; let idx = startIdx;
+      const output = html.replace(/(<svg[^>]*>)([\s\S]*?)(<\/svg>)/gi, (m, open, inner, close) => {
+        if (inner.trim().length < 20) return m;
+        const key = `__OMIT_SVG_${idx++}__`;
+        results.push({ placeholder: key, original: inner, kind: 'svg icon', size: inner.length });
+        return `${open}<!--${key}-->${close}`;
+      });
+      return { output, results, nextIdx: idx };
+    }
+
+    function extractRepeats(html, startIdx) {
+      const results = []; let idx = startIdx;
+      const seen = new Set();
+      const lines = html.split('\n').map(line => {
+        const trimmed = line.trim();
+        if (trimmed.length < 50 || !trimmed.startsWith('<')) return line;
+        if (!seen.has(trimmed)) { seen.add(trimmed); return line; }
+        const key = `__OMIT_REPEAT_${idx++}__`;
+        results.push({ placeholder: key, original: line, kind: 'repeated block', size: line.length });
+        const indent = line.match(/^\s*/)[0];
+        return `${indent}<!--${key}: identical to an earlier occurrence-->`;
+      });
+      return { output: lines.join('\n'), results, nextIdx: idx };
+    }
+
+    function minifyShell(html) {
+      return html.split('\n').map(l => l.replace(/^[ \t]+/, '').replace(/[ \t]{2,}/g, ' ')).join('\n').replace(/\n{2,}/g, '\n');
+    }
+
+    function buildExplainerBlock(results) {
+      if (!results.length) return '';
+      const kinds = [...new Set(results.map(r => r.kind))];
+      const totalChars = results.reduce((s, r) => s + r.size, 0);
+      const lines = [
+        'NOTICE FOR THE MODEL READING THIS FILE:',
+        `This file has been redacted before being sent to you. ${results.length} segment(s) — ${kinds.join(', ')} — totalling ~${totalChars.toLocaleString()} characters were removed and replaced with short markers like __OMIT_TYPE_N__.`,
+        'This is done purely to save context/tokens on content that has no bearing on the task (styling, binary-looking data, decorative markup, comments, duplicate blocks) — none of it was deleted, it lives outside this conversation and will be mechanically reinserted afterward by matching each marker back to its original content.',
+        'Do not attempt to reconstruct, guess, or fill in what a marker stood for. Leave every marker exactly as written, in its original position, character-for-character — including its surrounding quotes/brackets/comment syntax if any — even if it looks incomplete or like a broken reference. If you need to move, duplicate, or delete the code around a marker, keep the marker attached to it verbatim; if a marker must be deleted outright, that omitted content is deleted too.'
+      ];
+      return `<!--\n${lines.join('\n\n')}\n-->\n\n`;
+    }
+
+    function processHtml() {
+      const raw = inputEditor.value;
+      inputCount.textContent = raw ? `${raw.length.toLocaleString()} chars · ~${Math.round(raw.length/4).toLocaleString()} tokens` : '—';
+      if (!raw.trim()) {
+        strippedEditor.value = '';
+        extracted = [];
+        statsStrip.textContent = 'Paste code below to begin';
+        strippedCount.textContent = '—';
+        renderManifest();
+        renderPreview();
+        renderDetailedStats(0, 0, []);
+        tryRestore();
+        return;
+      }
+
       extracted = [];
-      statsStrip.textContent = 'Paste code below to begin';
-      strippedCount.textContent = '—';
-      renderManifest();
-      renderPreview();
-      tryRestore();
-      return;
-    }
- 
-    extracted = [];
-    let idx = 0;
-    let html = raw;
-    let removedStyles = 0;
- 
-    if (options.styles){
-      html = html.replace(
-        /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,
-        (_, open, content, close) => {
+      let idx = 0;
+      let html = raw;
+
+      const segCounts = { style:0, const:0, asset:0, comment:0, svg:0, repeat:0 };
+
+      if (options.styles) {
+        html = html.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi, (_, open, content, close) => {
           const key = `__OMIT_STYLE_${idx++}__`;
           extracted.push({ placeholder: key, original: content, kind: 'style block', size: content.length });
-          removedStyles++;
+          segCounts.style++;
           return open + `\n/* STYLING OMITTED FOR BREVITY [${key}]. DO NOT add any styling — leave empty. */\n` + close;
-        }
-      );
-    }
- 
-    let removedAssets = 0;
-    if (options.assets){
-      const res = extractBase64(html, idx);
-      html = res.output; idx = res.nextIdx; removedAssets = res.results.length;
-      extracted.push(...res.results);
-    }
- 
-    let removedConsts = 0;
-    if (options.consts){
-      const res = extractDeclarations(html, idx);
-      html = res.output; idx = res.nextIdx; removedConsts = res.results.length;
-      extracted.push(...res.results);
-    }
- 
-    let removedComments = 0;
-    if (options.comments){
-      const res = extractComments(html, idx);
-      html = res.output; idx = res.nextIdx; removedComments = res.results.length;
-      extracted.push(...res.results);
-    }
- 
-    let removedSvg = 0;
-    if (options.svg){
-      const res = extractSvgIcons(html, idx);
-      html = res.output; idx = res.nextIdx; removedSvg = res.results.length;
-      extracted.push(...res.results);
-    }
- 
-    let removedRepeats = 0;
-    if (options.repeats){
-      const res = extractRepeats(html, idx);
-      html = res.output; idx = res.nextIdx; removedRepeats = res.results.length;
-      extracted.push(...res.results);
-    }
- 
-    if (options.minify) html = minifyShell(html);
- 
-    const inLen = raw.length, redactedLen = html.length;
-    const pct = inLen > 0 ? Math.round(((inLen - redactedLen) / inLen) * 100) : 0;
- 
-    if (extracted.length) html = buildExplainerBlock(extracted) + html;
- 
-    strippedEditor.value = html;
- 
-    const outLen = html.length;
-    const parts = [];
-    if (removedStyles) parts.push(`${removedStyles} style block${removedStyles > 1 ? 's' : ''}`);
-    if (removedAssets) parts.push(`${removedAssets} asset${removedAssets > 1 ? 's' : ''}`);
-    if (removedConsts) parts.push(`${removedConsts} declaration${removedConsts > 1 ? 's' : ''}`);
-    if (removedComments) parts.push(`${removedComments} comment${removedComments > 1 ? 's' : ''}`);
-    if (removedSvg) parts.push(`${removedSvg} svg icon${removedSvg > 1 ? 's' : ''}`);
-    if (removedRepeats) parts.push(`${removedRepeats} repeated block${removedRepeats > 1 ? 's' : ''}`);
-    if (options.minify) parts.push('minified');
-    statsStrip.innerHTML = parts.length
-      ? `Redacted <b>${parts.join(', ')}</b> — <b>${pct}%</b> smaller`
-      : `Nothing matched the active filters`;
-    strippedCount.textContent = `${outLen.toLocaleString()} chars · ~${Math.round(outLen/4).toLocaleString()} tokens`;
- 
-    renderManifest();
-    renderPreview();
-    tryRestore();
-  }
- 
-  function renderManifest(){
-    if (!extracted.length){ manifestWrap.style.display = 'none'; manifestList.innerHTML=''; return; }
-    manifestWrap.style.display = 'block';
-    const totalSize = extracted.reduce((s,e) => s + e.size, 0);
-    manifestSummary.textContent = `${extracted.length} segment${extracted.length>1?'s':''} redacted · ${totalSize.toLocaleString()} chars hidden`;
-    manifestList.innerHTML = extracted.map(e =>
-      `<div class="manifest-item"><span class="tag">${escapeHtml(e.kind)}</span><span class="fname">${escapeHtml(e.placeholder)}</span><span class="fsize">${e.size.toLocaleString()} ch</span></div>`
-    ).join('');
-  }
- 
-  function toggleManifest(){
-    manifestToggle.classList.toggle('open');
-    manifestList.classList.toggle('open');
-  }
- 
-  function escapeHtml(s){
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
- 
-  function renderPreview(){
-    const text = strippedEditor.value;
-    if (!text){ strippedPreview.innerHTML = ''; return; }
-    let escaped = escapeHtml(text);
-    for (const item of extracted){
-      const label = `████ ${item.kind} · ${item.size.toLocaleString()}ch`;
-      escaped = escaped.split(item.placeholder).join(`<span class="redact-bar" title="${escapeHtml(item.placeholder)}">${escapeHtml(label)}</span>`);
-    }
-    strippedPreview.innerHTML = escaped;
-  }
- 
-  function setStrippedView(mode){
-    strippedView = mode;
-    document.getElementById('view-raw-btn').classList.toggle('active', mode === 'raw');
-    document.getElementById('view-preview-btn').classList.toggle('active', mode === 'preview');
-    strippedEditor.classList.toggle('hidden-by-preview', mode === 'preview');
-    strippedPreview.classList.toggle('active', mode === 'preview');
-    if (mode === 'preview') renderPreview();
-  }
- 
-  /* ───────────────────────── Phase 2: restore ───────────────────────── */
-  updatedEditor.addEventListener('input', () => { tryRestore(); queueSave(); });
- 
-  function tryRestore(){
-    const updated = updatedEditor.value.trim();
-    document.getElementById('restored-panel').classList.remove('output-good');
- 
-    if (!updated){
-      restoredEditor.value = '';
-      restoredCount.textContent = '—';
-      restoreStatus.innerHTML = 'Waiting for edited code…';
-      restoreStatus.className = 'status-line';
-      return;
-    }
- 
-    if (extracted.length === 0){
-      restoredEditor.value = updated;
-      restoredCount.textContent = `${updated.length.toLocaleString()} chars`;
-      restoreStatus.innerHTML = 'Nothing was redacted — output passed through unchanged.';
-      restoreStatus.className = 'status-line warn';
-      return;
-    }
- 
-    let restored = updated;
-    let matchCount = 0;
-    const missing = [];
- 
-    for (const { placeholder, original } of extracted){
-      const bare = placeholder.replace(/^"|"$/g, '');
-      const patterns = [placeholder, bare, `"${bare}"`, `'${bare}'`, `\`${bare}\``];
-      let found = false;
-      for (const p of patterns){
-        if (restored.includes(p)){
-          restored = restored.split(p).join(original);
-          matchCount++; found = true; break;
-        }
+        });
       }
-      if (!found) missing.push(bare);
+
+      if (options.assets) {
+        const res = extractBase64(html, idx);
+        html = res.output; idx = res.nextIdx;
+        extracted.push(...res.results);
+        segCounts.asset += res.results.length;
+      }
+      if (options.consts) {
+        const res = extractDeclarations(html, idx);
+        html = res.output; idx = res.nextIdx;
+        extracted.push(...res.results);
+        segCounts.const += res.results.length;
+      }
+      if (options.comments) {
+        const res = extractComments(html, idx);
+        html = res.output; idx = res.nextIdx;
+        extracted.push(...res.results);
+        segCounts.comment += res.results.length;
+      }
+      if (options.svg) {
+        const res = extractSvgIcons(html, idx);
+        html = res.output; idx = res.nextIdx;
+        extracted.push(...res.results);
+        segCounts.svg += res.results.length;
+      }
+      if (options.repeats) {
+        const res = extractRepeats(html, idx);
+        html = res.output; idx = res.nextIdx;
+        extracted.push(...res.results);
+        segCounts.repeat += res.results.length;
+      }
+
+      if (options.minify) html = minifyShell(html);
+
+      const inLen = raw.length;
+      let appTextSize = 0;
+      if (extracted.length) {
+        const explainer = buildExplainerBlock(extracted);
+        appTextSize = explainer.length;
+        html = explainer + html;
+      }
+
+      strippedEditor.value = html;
+      const outLen = html.length;
+      const pct = inLen > 0 ? Math.round(((inLen - outLen) / inLen) * 100) : 0;
+
+      const parts = [];
+      if (segCounts.style) parts.push(`${segCounts.style} style`);
+      if (segCounts.asset) parts.push(`${segCounts.asset} asset`);
+      if (segCounts.const) parts.push(`${segCounts.const} decl`);
+      if (segCounts.comment) parts.push(`${segCounts.comment} comment`);
+      if (segCounts.svg) parts.push(`${segCounts.svg} svg`);
+      if (segCounts.repeat) parts.push(`${segCounts.repeat} repeat`);
+      if (options.minify) parts.push('minified');
+      statsStrip.innerHTML = parts.length
+        ? `Redacted <b>${parts.join(', ')}</b> — <b>${pct}%</b> smaller`
+        : `Nothing matched the active filters`;
+      strippedCount.textContent = `${outLen.toLocaleString()} chars · ~${Math.round(outLen/4).toLocaleString()} tokens`;
+
+      renderManifest();
+      renderPreview();
+      renderDetailedStats(inLen, outLen, extracted, appTextSize, segCounts);
+      tryRestore();
     }
- 
-    restoredEditor.value = restored;
-    restoredCount.textContent = `${restored.length.toLocaleString()} chars · ~${Math.round(restored.length/4).toLocaleString()} tokens`;
- 
-    if (missing.length === 0){
-      restoreStatus.innerHTML = `<span class="status-stamp">DECLASSIFIED</span> All ${matchCount} segment${matchCount!==1?'s':''} restored.`;
-      restoreStatus.className = 'status-line ok';
-      document.getElementById('restored-panel').classList.add('output-good');
-    } else {
-      restoreStatus.innerHTML = `⚠ Restored ${matchCount}/${extracted.length}. Missing marker${missing.length>1?'s':''}: ${missing.map(escapeHtml).join(', ')} — the LLM may have altered or removed ${missing.length>1?'them':'it'}.`;
-      restoreStatus.className = 'status-line warn';
+
+    function renderDetailedStats(inLen, outLen, segments, appTextSize = 0, segCounts = { style:0, const:0, asset:0, comment:0, svg:0, repeat:0 }) {
+      if (!inLen) {
+        visualStats.style.display = 'none';
+        return;
+      }
+      visualStats.style.display = 'block';
+
+      const kept = outLen;
+      const redactedTotal = segments.reduce((s, e) => s + e.size, 0);
+      const appText = appTextSize || 0;
+      const total = kept + redactedTotal + appText;
+      if (total === 0) { visualStats.style.display = 'none'; return; }
+
+      const keptPct = (kept / total) * 100;
+      const appPct = (appText / total) * 100;
+
+      const kindMap = { 'style block':0, 'const/let/var':0, 'base64 asset':0, 'comment':0, 'svg icon':0, 'repeated block':0 };
+      segments.forEach(s => {
+        if (s.kind === 'style block') kindMap['style block'] += s.size;
+        else if (s.kind === 'const/let/var') kindMap['const/let/var'] += s.size;
+        else if (s.kind === 'base64 asset') kindMap['base64 asset'] += s.size;
+        else if (s.kind === 'comment') kindMap['comment'] += s.size;
+        else if (s.kind === 'svg icon') kindMap['svg icon'] += s.size;
+        else if (s.kind === 'repeated block') kindMap['repeated block'] += s.size;
+      });
+
+      const styleSize = kindMap['style block'];
+      const constSize = kindMap['const/let/var'];
+      const assetSize = kindMap['base64 asset'];
+      const commentSize = kindMap['comment'];
+      const svgSize = kindMap['svg icon'];
+      const repeatSize = kindMap['repeated block'];
+
+      const stylePct = (styleSize / total) * 100;
+      const constPct = (constSize / total) * 100;
+      const assetPct = (assetSize / total) * 100;
+      const commentPct = (commentSize / total) * 100;
+      const svgPct = (svgSize / total) * 100;
+      const repeatPct = (repeatSize / total) * 100;
+
+      vsKeptNum.textContent = kept.toLocaleString();
+      vsKeptPct.textContent = keptPct.toFixed(1) + '%';
+      vsApptextNum.textContent = appText.toLocaleString();
+      vsStyleNum.textContent = styleSize.toLocaleString();
+      vsConstNum.textContent = constSize.toLocaleString();
+      vsAssetNum.textContent = assetSize.toLocaleString();
+      vsCommentNum.textContent = commentSize.toLocaleString();
+      vsSvgNum.textContent = svgSize.toLocaleString();
+      vsRepeatNum.textContent = repeatSize.toLocaleString();
+
+      // Show "X% Smaller" (reduction relative to original input)
+      const smallerPct = inLen > 0 ? ((inLen - outLen) / inLen) * 100 : 0;
+      const figureEl = vsFigure;
+      if (smallerPct > 0.5) {
+        figureEl.textContent = `${smallerPct.toFixed(0)}% Smaller`;
+        figureEl.className = 'vs-figure smaller';
+      } else if (smallerPct > 0) {
+        figureEl.textContent = `${smallerPct.toFixed(1)}% Smaller`;
+        figureEl.className = 'vs-figure smaller';
+      } else {
+        figureEl.textContent = 'Same size';
+        figureEl.className = 'vs-figure same';
+      }
+
+      // Build bar: kept, app text, then segment types
+      const barSegments = [];
+      function pushSeg(pct, cls, label) {
+        if (pct < 0.5) return;
+        barSegments.push({ pct, cls, label: label || '' });
+      }
+      pushSeg(keptPct, 'vs-bar-kept', `${keptPct.toFixed(0)}%`);
+      pushSeg(appPct, 'vs-bar-apptext', '📄');
+      pushSeg(stylePct, 'vs-bar-style', '🎨');
+      pushSeg(constPct, 'vs-bar-const', '📦');
+      pushSeg(assetPct, 'vs-bar-asset', '🖼️');
+      pushSeg(commentPct, 'vs-bar-comment', '💬');
+      pushSeg(svgPct, 'vs-bar-svg', '🔶');
+      pushSeg(repeatPct, 'vs-bar-repeat', '♻️');
+
+      vsBarTrack.innerHTML = barSegments.map(seg =>
+        `<div class="vs-bar-seg ${seg.cls}" style="width:${Math.max(seg.pct, 0.5)}%;"><span>${seg.label}</span></div>`
+      ).join('');
     }
-  }
- 
-  /* ───────────────────────── file upload / drag-drop ───────────────────────── */
-  document.getElementById('file-input').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    readFileIntoInput(file);
-    e.target.value = '';
-  });
- 
-  function readFileIntoInput(file){
-    const reader = new FileReader();
-    reader.onload = () => {
-      inputEditor.value = reader.result;
-      processHtml(); queueSave();
-      showToast(`Loaded ${file.name}`);
-    };
-    reader.onerror = () => showToast('Could not read that file', 'red');
-    reader.readAsText(file);
-  }
- 
-  const inputPanel = document.getElementById('input-panel');
-  ['dragenter','dragover'].forEach(evt =>
-    inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.add('drag-over'); })
-  );
-  ['dragleave','drop'].forEach(evt =>
-    inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.remove('drag-over'); })
-  );
-  inputPanel.addEventListener('drop', (e) => {
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) readFileIntoInput(file);
-  });
- 
-  /* ───────────────────────── utilities ───────────────────────── */
-  function showToast(msg, color){
-    toast.textContent = msg;
-    toast.className = 'toast show' + (color ? ' ' + color : '');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => toast.classList.remove('show'), 2000);
-  }
- 
-  function copyPanel(id, isGood){
-    const val = document.getElementById(id).value;
-    if (!val){ showToast('Nothing to copy yet', 'red'); return; }
-    navigator.clipboard.writeText(val).catch(() => {
-      const el = document.getElementById(id);
-      el.select(); document.execCommand('copy');
+
+    function renderManifest() {
+      if (!extracted.length) { manifestWrap.style.display = 'none'; manifestList.innerHTML=''; return; }
+      manifestWrap.style.display = 'block';
+      const totalSize = extracted.reduce((s,e) => s + e.size, 0);
+      manifestSummary.textContent = `${extracted.length} segment${extracted.length>1?'s':''} redacted · ${totalSize.toLocaleString()} chars hidden`;
+      manifestList.innerHTML = extracted.map(e =>
+        `<div class="manifest-item"><span class="tag">${escapeHtml(e.kind)}</span><span class="fname">${escapeHtml(e.placeholder)}</span><span class="fsize">${e.size.toLocaleString()} ch</span></div>`
+      ).join('');
+    }
+
+    function toggleManifest() {
+      manifestToggle.classList.toggle('open');
+      manifestList.classList.toggle('open');
+    }
+    window.toggleManifest = toggleManifest;
+
+    function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function renderPreview() {
+      const text = strippedEditor.value;
+      if (!text) { strippedPreview.innerHTML = ''; return; }
+      let escaped = escapeHtml(text);
+      for (const item of extracted) {
+        const label = `████ ${item.kind} · ${item.size.toLocaleString()}ch`;
+        escaped = escaped.split(item.placeholder).join(`<span class="redact-bar" title="${escapeHtml(item.placeholder)}">${escapeHtml(label)}</span>`);
+      }
+      strippedPreview.innerHTML = escaped;
+    }
+
+    function setStrippedView(mode) {
+      strippedView = mode;
+      document.getElementById('view-raw-btn').classList.toggle('active', mode === 'raw');
+      document.getElementById('view-preview-btn').classList.toggle('active', mode === 'preview');
+      strippedEditor.classList.toggle('hidden-by-preview', mode === 'preview');
+      strippedPreview.classList.toggle('active', mode === 'preview');
+      if (mode === 'preview') renderPreview();
+    }
+    window.setStrippedView = setStrippedView;
+
+    function tryRestore() {
+      const updated = updatedEditor.value.trim();
+      document.getElementById('restored-panel').classList.remove('output-good');
+      if (!updated) {
+        restoredEditor.value = '';
+        restoredCount.textContent = '—';
+        restoreStatus.innerHTML = 'Waiting for edited code…';
+        restoreStatus.className = 'status-line';
+        return;
+      }
+      if (extracted.length === 0) {
+        restoredEditor.value = updated;
+        restoredCount.textContent = `${updated.length.toLocaleString()} chars`;
+        restoreStatus.innerHTML = 'Nothing was redacted — output passed through unchanged.';
+        restoreStatus.className = 'status-line warn';
+        return;
+      }
+      let restored = updated;
+      let matchCount = 0;
+      const missing = [];
+      for (const { placeholder, original } of extracted) {
+        const bare = placeholder.replace(/^"|"$/g, '');
+        const patterns = [placeholder, bare, `"${bare}"`, `'${bare}'`, `\`${bare}\``];
+        let found = false;
+        for (const p of patterns) {
+          if (restored.includes(p)) {
+            restored = restored.split(p).join(original);
+            matchCount++; found = true; break;
+          }
+        }
+        if (!found) missing.push(bare);
+      }
+      restoredEditor.value = restored;
+      restoredCount.textContent = `${restored.length.toLocaleString()} chars · ~${Math.round(restored.length/4).toLocaleString()} tokens`;
+      if (missing.length === 0) {
+        restoreStatus.innerHTML = `<span class="status-stamp">DECLASSIFIED</span> All ${matchCount} segment${matchCount!==1?'s':''} restored.`;
+        restoreStatus.className = 'status-line ok';
+        document.getElementById('restored-panel').classList.add('output-good');
+      } else {
+        restoreStatus.innerHTML = `⚠ Restored ${matchCount}/${extracted.length}. Missing marker${missing.length>1?'s':''}: ${missing.map(escapeHtml).join(', ')} — the LLM may have altered or removed ${missing.length>1?'them':'it'}.`;
+        restoreStatus.className = 'status-line warn';
+      }
+    }
+
+    document.getElementById('file-input').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      readFileIntoInput(file);
+      e.target.value = '';
     });
-    showToast('Copied to clipboard', isGood ? 'green' : null);
-  }
- 
-  function downloadText(text, filename){
-    if (!text){ showToast('Nothing to download yet', 'red'); return; }
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    showToast(`Downloaded ${filename}`);
-  }
- 
-  function clearAll(){
-    inputEditor.value = ''; strippedEditor.value = '';
-    updatedEditor.value = ''; restoredEditor.value = '';
-    extracted = [];
-    statsStrip.textContent = 'Paste code below to begin';
-    inputCount.textContent = '—'; strippedCount.textContent = '—'; restoredCount.textContent = '—';
-    restoreStatus.textContent = 'Waiting for edited code…';
-    restoreStatus.className = 'status-line';
-    document.getElementById('restored-panel').classList.remove('output-good');
-    renderManifest(); renderPreview();
-    queueSave(true);
-  }
- 
-  function clearUpdated(){
-    updatedEditor.value = ''; restoredEditor.value = '';
-    restoredCount.textContent = '—';
-    restoreStatus.textContent = 'Waiting for edited code…';
-    restoreStatus.className = 'status-line';
-    document.getElementById('restored-panel').classList.remove('output-good');
-    queueSave();
-  }
- 
-  document.addEventListener('keydown', (e) => {
-    const mod = e.metaKey || e.ctrlKey;
-    if (mod && e.key.toLowerCase() === 's'){
-      e.preventDefault();
-      downloadText(restoredEditor.value || strippedEditor.value, 'restored-source.txt');
+
+    function readFileIntoInput(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        inputEditor.value = reader.result;
+        processHtml(); queueSave();
+        showToast(`Loaded ${file.name}`);
+      };
+      reader.onerror = () => showToast('Could not read that file', 'red');
+      reader.readAsText(file);
     }
-    if (mod && e.key.toLowerCase() === 'k'){
-      e.preventDefault();
-      clearAll();
+
+    const inputPanel = document.getElementById('input-panel');
+    ['dragenter','dragover'].forEach(evt => inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.add('drag-over'); }));
+    ['dragleave','drop'].forEach(evt => inputPanel.addEventListener(evt, (e) => { e.preventDefault(); inputPanel.classList.remove('drag-over'); }));
+    inputPanel.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) readFileIntoInput(file);
+    });
+
+    inputEditor.addEventListener('input', () => { processHtml(); queueSave(); });
+    updatedEditor.addEventListener('input', () => { tryRestore(); queueSave(); });
+
+    function showToast(msg, color) {
+      toast.textContent = msg;
+      toast.className = 'toast show' + (color ? ' ' + color : '');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2000);
     }
-  });
- 
-  /* ───────────────────────── session autosave ───────────────────────── */
-  function queueSave(immediate){
-    clearTimeout(saveTimer);
-    const doSave = async () => {
-      try{
-        await window.storage.set('session', JSON.stringify({
-          input: inputEditor.value,
-          updated: updatedEditor.value,
-          options
-        }), false);
-        sessionNote.textContent = 'Session saved locally';
-        sessionNote.classList.add('show');
-      } catch(err){
-        sessionNote.classList.remove('show');
-        sessionNote.textContent = 'Autosave unavailable';
+
+    function copyPanel(id, isGood) {
+      const val = document.getElementById(id).value;
+      if (!val) { showToast('Nothing to copy yet', 'red'); return; }
+      navigator.clipboard.writeText(val).catch(() => {
+        const el = document.getElementById(id);
+        el.select(); document.execCommand('copy');
+      });
+      showToast('Copied to clipboard', isGood ? 'green' : null);
+    }
+    window.copyPanel = copyPanel;
+
+    function downloadText(text, filename) {
+      if (!text) { showToast('Nothing to download yet', 'red'); return; }
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    }
+    window.downloadText = downloadText;
+
+    function clearAll() {
+      inputEditor.value = ''; strippedEditor.value = '';
+      updatedEditor.value = ''; restoredEditor.value = '';
+      extracted = [];
+      statsStrip.textContent = 'Paste code below to begin';
+      inputCount.textContent = '—'; strippedCount.textContent = '—'; restoredCount.textContent = '—';
+      restoreStatus.textContent = 'Waiting for edited code…';
+      restoreStatus.className = 'status-line';
+      document.getElementById('restored-panel').classList.remove('output-good');
+      renderManifest(); renderPreview(); renderDetailedStats(0, 0, []);
+      queueSave(true);
+    }
+    window.clearAll = clearAll;
+
+    function clearUpdated() {
+      updatedEditor.value = ''; restoredEditor.value = '';
+      restoredCount.textContent = '—';
+      restoreStatus.textContent = 'Waiting for edited code…';
+      restoreStatus.className = 'status-line';
+      document.getElementById('restored-panel').classList.remove('output-good');
+      queueSave();
+    }
+    window.clearUpdated = clearUpdated;
+
+    document.addEventListener('keydown', (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        downloadText(restoredEditor.value || strippedEditor.value, 'restored-source.txt');
       }
-    };
-    if (immediate) doSave(); else saveTimer = setTimeout(doSave, 600);
-  }
- 
-  async function restoreSession(){
-    try{
-      const res = await window.storage.get('session', false);
-      if (!res || !res.value) return;
-      const data = JSON.parse(res.value);
-      if (data.input) inputEditor.value = data.input;
-      if (data.updated) updatedEditor.value = data.updated;
-      if (data.options){
-        Object.assign(options, data.options);
-        for (const key of Object.keys(options)){
-          const chip = document.getElementById('chip-' + key);
-          if (chip) chip.classList.toggle('on', options[key]);
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        clearAll();
+      }
+    });
+
+    function queueSave(immediate) {
+      clearTimeout(saveTimer);
+      const doSave = async () => {
+        try {
+          await window.storage.set('session', JSON.stringify({
+            input: inputEditor.value,
+            updated: updatedEditor.value,
+            options
+          }), false);
+          sessionNote.textContent = 'Session saved locally';
+          sessionNote.classList.add('show');
+        } catch(err) {
+          sessionNote.classList.remove('show');
+          sessionNote.textContent = 'Autosave unavailable';
         }
-      }
-      if (data.input || data.updated){
-        sessionNote.textContent = 'Restored your last session';
-        sessionNote.classList.add('show');
-      }
-    } catch(err){
-      /* no saved session yet, or storage unavailable — start fresh */
-    } finally {
+      };
+      if (immediate) doSave(); else saveTimer = setTimeout(doSave, 600);
+    }
+    window.queueSave = queueSave;
+
+    async function restoreSession() {
+      try {
+        const res = await window.storage.get('session', false);
+        if (!res || !res.value) return;
+        const data = JSON.parse(res.value);
+        if (data.input) inputEditor.value = data.input;
+        if (data.updated) updatedEditor.value = data.updated;
+        if (data.options) {
+          Object.assign(options, data.options);
+          for (const key of Object.keys(options)) {
+            const chip = document.getElementById('chip-' + key);
+            if (chip) chip.classList.toggle('on', options[key]);
+          }
+        }
+        if (data.input || data.updated) {
+          sessionNote.textContent = 'Restored your last session';
+          sessionNote.classList.add('show');
+        }
+      } catch(err) { /* no session */ }
       processHtml();
     }
-  }
- 
-  restoreSession();
+    restoreSession();
+  })();
 </script>
 </body>
 </html>
