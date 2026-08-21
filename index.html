@@ -1063,53 +1063,97 @@
     }
     window.setStrippedView = setStrippedView;
 
-    function tryRestore() {
-  const updated = updatedEditor.value.trim();
-  document.getElementById('restored-panel').classList.remove('output-good');
-  if (!updated) {
-    restoredEditor.value = '';
-    restoredCount.textContent = '—';
-    restoreStatus.innerHTML = 'Waiting for edited code…';
-    restoreStatus.className = 'status-line';
-    return;
-  }
-  if (extracted.length === 0) {
-    restoredEditor.value = updated;
-    restoredCount.textContent = `${updated.length.toLocaleString()} chars`;
-    restoreStatus.innerHTML = 'Nothing was redacted — output passed through unchanged.';
-    restoreStatus.className = 'status-line warn';
-    return;
-  }
-  let restored = updated;
-
-  // Strip the Phase 01 explainer comment block, if present
-  restored = restored.replace(/^\s*<!--\s*\nNOTICE FOR THE MODEL READING THIS FILE:[\s\S]*?-->\s*\n*/, '');
-
-  let matchCount = 0;
-  const missing = [];
-  for (const { placeholder, original } of extracted) {
-    const bare = placeholder.replace(/^"|"$/g, '');
-    const patterns = [placeholder, bare, `"${bare}"`, `'${bare}'`, `\`${bare}\``];
-    let found = false;
-    for (const p of patterns) {
-      if (restored.includes(p)) {
-        restored = restored.split(p).join(original);
-        matchCount++; found = true; break;
+    // --- Restore logic -------------------------------------------------
+    // Each redaction kind wraps the placeholder key in different amounts of
+    // explanatory text/comment syntax when it's written into the stripped
+    // output (see processHtml/extract* above). Restore has to match and
+    // remove that *entire* wrapper — not just swap the bare key — or the
+    // wrapper text (and, for SVGs, a comment that would otherwise silently
+    // hide the restored markup) gets left behind in the final file.
+    function buildWrappedPatterns(item) {
+      const bare = item.placeholder;
+      switch (item.kind) {
+        case 'style block':
+          return [
+            `/* STYLING OMITTED FOR BREVITY [${bare}]. DO NOT add any styling — leave empty. */`,
+            bare
+          ];
+        case 'const/let/var':
+          return [
+            `"DATA OMITTED FOR BREVITY [${bare}]. DO NOT invent or restore this data — leave the marker as-is."`,
+            bare
+          ];
+        case 'svg icon':
+          // Original wrapper commented the icon out entirely — strip the
+          // <!-- --> along with the key, not just the key.
+          return [
+            `<!--${bare}-->`,
+            bare
+          ];
+        case 'repeated block':
+          // Wrapper included leading indentation plus trailing explainer text.
+          return [
+            { regex: new RegExp('[ \\t]*<!--' + bare + ': identical to an earlier occurrence-->') },
+            `<!--${bare}: identical to an earlier occurrence-->`,
+            bare
+          ];
+        default: // base64 asset, comment — written as a bare/quoted key, no extra wrapper prose
+          return [bare, `"${bare}"`, `'${bare}'`, `\`${bare}\``];
       }
     }
-    if (!found) missing.push(bare);
-  }
-  restoredEditor.value = restored;
-  restoredCount.textContent = `${restored.length.toLocaleString()} chars · ~${Math.round(restored.length/4).toLocaleString()} tokens`;
-  if (missing.length === 0) {
-    restoreStatus.innerHTML = `<span class="status-stamp">DECLASSIFIED</span> All ${matchCount} segment${matchCount!==1?'s':''} restored.`;
-    restoreStatus.className = 'status-line ok';
-    document.getElementById('restored-panel').classList.add('output-good');
-  } else {
-    restoreStatus.innerHTML = `⚠ Restored ${matchCount}/${extracted.length}. Missing marker${missing.length>1?'s':''}: ${missing.map(escapeHtml).join(', ')} — the LLM may have altered or removed ${missing.length>1?'them':'it'}.`;
-    restoreStatus.className = 'status-line warn';
-  }
-}
+
+    function tryRestore() {
+      const updated = updatedEditor.value.trim();
+      document.getElementById('restored-panel').classList.remove('output-good');
+      if (!updated) {
+        restoredEditor.value = '';
+        restoredCount.textContent = '—';
+        restoreStatus.innerHTML = 'Waiting for edited code…';
+        restoreStatus.className = 'status-line';
+        return;
+      }
+      if (extracted.length === 0) {
+        restoredEditor.value = updated;
+        restoredCount.textContent = `${updated.length.toLocaleString()} chars`;
+        restoreStatus.innerHTML = 'Nothing was redacted — output passed through unchanged.';
+        restoreStatus.className = 'status-line warn';
+        return;
+      }
+      let restored = updated;
+
+      // Strip the Phase 01 explainer comment block, if present
+      restored = restored.replace(/^\s*<!--\s*\nNOTICE FOR THE MODEL READING THIS FILE:[\s\S]*?-->\s*\n*/, '');
+
+      let matchCount = 0;
+      const missing = [];
+      for (const item of extracted) {
+        const { original } = item;
+        const patterns = buildWrappedPatterns(item);
+        let found = false;
+        for (const p of patterns) {
+          if (typeof p === 'object' && p.regex) {
+            if (p.regex.test(restored)) {
+              restored = restored.replace(p.regex, original);
+              matchCount++; found = true; break;
+            }
+          } else if (restored.includes(p)) {
+            restored = restored.split(p).join(original);
+            matchCount++; found = true; break;
+          }
+        }
+        if (!found) missing.push(item.placeholder.replace(/^"|"$/g, ''));
+      }
+      restoredEditor.value = restored;
+      restoredCount.textContent = `${restored.length.toLocaleString()} chars · ~${Math.round(restored.length/4).toLocaleString()} tokens`;
+      if (missing.length === 0) {
+        restoreStatus.innerHTML = `<span class="status-stamp">DECLASSIFIED</span> All ${matchCount} segment${matchCount!==1?'s':''} restored.`;
+        restoreStatus.className = 'status-line ok';
+        document.getElementById('restored-panel').classList.add('output-good');
+      } else {
+        restoreStatus.innerHTML = `⚠ Restored ${matchCount}/${extracted.length}. Missing marker${missing.length>1?'s':''}: ${missing.map(escapeHtml).join(', ')} — the LLM may have altered or removed ${missing.length>1?'them':'it'}.`;
+        restoreStatus.className = 'status-line warn';
+      }
+    }
 
     document.getElementById('file-input').addEventListener('change', (e) => {
       const file = e.target.files[0];
